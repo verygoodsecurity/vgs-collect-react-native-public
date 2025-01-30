@@ -1,1 +1,315 @@
-# vgs-collect-react-native
+<p align="center">
+  <a href="https://www.verygoodsecurity.com/" rel="nofollow">
+    <img src="https://avatars0.githubusercontent.com/u/17788525" width="128" alt="VGS Logo">
+  </a>
+  <h3 align="center">VGS Collect React Native SDK</h3>
+
+  <p align="center">
+    Securely collect, tokenize, and manage sensitive data in your React Native applications with ease.
+    <br />
+    <a href="https://www.verygoodsecurity.com/docs/vgs-collect/"><strong>Explore the docs »</strong></a>
+    <br />
+    <br />
+    <a href="https://www.npmjs.com/package/@vgs/collect-react-native">NPM (@vgs/collect-react-native)</a>
+  </p>
+</p>
+
+## Table of Contents
+
+- [Introduction](#introduction)
+- [Features](#features)
+- [Installation](#installation)
+- [Prerequisites](#prerequisites)
+- [Quick Start](#quick-start)
+- [UI Inputs](#ui-inputs)
+- [Masking Inputs](#masking-inputs)
+- [Custom Validation](#custom-validation)
+- [Example](#example)
+- [License](#license)
+
+## Introduction
+
+The `@vgs/collect-react-native` SDK by Very Good Security (VGS) enables you to securely collect and manage sensitive data such as credit card information and Social Security Numbers (SSNs) within your React Native applications. Leveraging VGS's data protection infrastructure ensures that sensitive information is handled securely, simplifying compliance and enhancing user trust.
+
+## Features
+
+- **Secure Data Collection:** Tokenize sensitive data before it reaches your servers.
+- **Customizable Input Components:** Pre-built components for various data types (e.g., Card Number, CVC, Expiration Date, Social Security Number).
+- **Real-time Validation:** Instant feedback on input validity to enhance user experience.
+- **Pre-defined Masking:** Automatically setup input masks based on data type.
+- **Easy Integration:** Simple setup and integration with existing React Native projects.
+- **Compliance Ready:** Assists in achieving PCI DSS compliance by minimizing the handling of sensitive data.
+
+## Installation
+
+Install the `@vgs/collect-react-native` package using npm or yarn:
+
+```bash
+# Using npm
+npm install @vgs/collect-react-native
+
+# Using yarn
+yarn add @vgs/collect-react-native
+```
+Ensure you have React Native set up in your project. If not, follow the React Native Getting Started guide.
+
+## Prerequisites
+You should have your organization registered at <a href="https://dashboard.verygoodsecurity.com/dashboard/">VGS Dashboard</a>. Sandbox vault will be pre-created for you. You should use your `<vaultId>` to start collecting data.
+
+## Quick Start
+
+Import the SDK Components:
+```javascript
+import { VGSCollect, VGSTextInput } from '@vgs/collect-react-native';
+```
+Initialize VGSCollect:
+```javascript
+const collector = new VGSCollect('yourVaultId', 'sandbox'); // Use 'live' for production
+```
+Create Secure Input Fields:
+```javascript
+<VGSTextInput
+  collector={collector}
+  fieldName="card_holder"
+  type="cardHolderName"
+  placeholder="Name"
+  onStateChange={handleFieldStateChange}
+/>
+```
+Handle Form Submission:
+```javascript
+const handleSubmit = async () => {
+  try {
+    const response = await collector.submit('/post', 'POST');
+    const data = await response.json();
+    console.log('Data submitted:', data);
+  } catch (error) {
+    console.error('Submission error:', error);
+  }
+};
+```
+**NOTE**: for each input you should set 'fieldName' attribute, that should be same as in you **Vault** Route settings. This identifier is required for Redact/Reveal operations on Inbound/Outbound Routes.
+
+## UI Inputs
+
+The SDK provides pre-built UI input components for securely collecting sensitive data. The following input components are available:
+
+* **`VGSTextInput`:** A versatile, customizable input component. 
+    * **Field Types:** You can configure the input's behavior by setting the `type` prop. 
+        * Supported types: 
+            * `'text'`: General-purpose text input with no predefined settings.
+            * `'card'`: For collecting card numbers.
+            * `'cardHolderName'`: For collecting card holder names.
+            * `'expDate'`: For collecting card expiration dates.
+            * `'cvc'`: For collecting CVC/CVV codes.
+            * `'ssn'`: For collecting social security numbers.
+        * Each type includes default configurations for:
+            * **Validation Rules:** Enforces data integrity and compliance.
+            * **Input Mask:** Provides visual guidance and improves user experience.
+            * **Keyboard Type:** Optimizes the on-screen keyboard for the input type.
+* **`VGSCardInput`:** A specialized input component for collecting card numbers. 
+    * **Features:** 
+        * Predefined `type='card'`.
+        * Dynamically displays the detected card brand based on user input.
+* **`VGSCVCInput`:** A specialized input component for collecting CVC/CVV codes.
+    * **Features:** 
+        * Predefined `type='cvc'`.
+        * Displays an icon to guide users in entering the CVC/CVV code.
+
+## Masking Inputs
+
+VGS Input components allow you to apply a mask to the input field using the mask prop. This prop accepts a string pattern that defines how the input should be formatted. It uses placeholder characters to define the allowed characters in each position of the mask. The following placeholders are supported:
+
+-  `#`: Any digit (0-9)
+-  `@`: Any letter (a-zA-Z)
+-  `a`: Any lowercase letter (a-z)
+-  `A`: Any uppercase letter (A-Z)
+-  `*`: Any alphanumeric character (a-zA-Z0-9)
+
+Here's how to use the mask prop:
+```javascript
+<VGSTextInput
+  //... other props
+  mask="#### #### #### ####" // Example mask for a credit card number
+/>
+```
+
+## Custom Validation
+
+VGS Input components allow you to re-define default or add custom validation rules to ensure that the input data meets certain criteria. You can use the validationRules prop to pass an array of ValidationRule objects.
+
+Here's a list of the available validation rules available:
+
+-  `NotEmptyRule`: Checks if the input is not empty.
+-  `LengthRule`: Validates the input length against a minimum and maximum length.
+-  `LengthMatchRule`: Checks if the input has an exact specified length.
+-  `PatternRule`: Validates the input against a regular expression pattern.
+-  `CardExpDateRule`: Checks if the input is a valid card expiration date in the specified format ('mmyy' or 'mmyyyy').
+-  `PaymentCardRule`: Validates if the input is a valid payment card number based on the card brand and Luhn check.
+-  `LuhnCheckRule`: Performs a Luhn check on the input to validate its integrity (commonly used for credit card numbers).
+
+Here's how to set validation rules:
+```javascript
+import { NotEmptyRule, LengthRule, PatternRule } from '@vgs/collect-react-native';
+
+<VGSTextInput
+  //... other props
+  validationRules={[
+    new NotEmptyRule('This field is required'),
+    new LengthRule(5, 10, 'Length must be between 5 and 10 characters'),
+    new PatternRule(/^[a-zA-Z]+$/, 'Only letters are allowed'),
+  ]}
+/>
+```
+
+## Example
+
+Below is a complete example demonstrating how to integrate @vgs/collect-react-native into a React Native application. You can also check our [example app](./example).
+```javascript
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
+import { VGSCollect, VGSTextInput, VGSCardInput, VGSCVCInput } from '@vgs/collect-react-native';
+import type { VGSTextInputState } from '@vgs/collect-react-native';
+
+const collector = new VGSCollect('yourVaultId', 'sandbox');
+
+const App = () => {
+    const [formState, setFormState] = useState<{
+        [key: string]: VGSTextInputState;
+    }>();
+
+  const handleFieldStateChange = (fieldName, state) => {
+    setFormState(prev => ({ ...prev, [fieldName]: state }));
+  };
+
+  const isFormValid = () => {
+    return Object.values(formState).every(field => field.isValid);
+  };
+
+  const handleSubmit = async () => {
+    if (!isFormValid()) {
+      alert('Please fill out all fields correctly.');
+      return;
+    }
+
+    try {
+      const response = await collector.submit('/post', 'POST');
+      const data = await response.json();
+      console.log('Data submitted:', data);
+    } catch (error) {
+      console.error('Submission error:', error);
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <Text style={styles.title}>VGS Collect Example</Text>
+        <VGSTextInput
+          collector={collector}
+          fieldName="card_holder"
+          type="cardHolderName"
+          placeholder="Card Holder Name"
+          onStateChange={(state) => handleFieldStateChange('card_holder', state)}
+          containerStyle={styles.inputContainer}
+          textStyle={styles.inputText}
+        />
+        <VGSCardInput
+          collector={collector}
+          fieldName="card_number"
+          type="card"
+          placeholder="4111 1111 1111 1111"
+          onStateChange={(state) => handleFieldStateChange('card_number', state)}
+          containerStyle={styles.inputContainer}
+          textStyle={styles.inputText}
+        />
+        <VGSTextInput
+          collector={collector}
+          fieldName="expiration_date"
+          type="expDate"
+          placeholder="MM/YY"
+          onStateChange={(state) => handleFieldStateChange('expiration_date', state)}
+          containerStyle={styles.inputContainer}
+          textStyle={styles.inputText}
+        />
+        <VGSCVCInput
+          collector={collector}
+          fieldName="card_cvc"
+          placeholder="CVC/CVV"
+          onStateChange={(state) => handleFieldStateChange('card_cvc', state)}
+          containerStyle={styles.inputContainer}
+          textStyle={styles.inputText}
+        />
+        <TouchableOpacity
+          style={[styles.button, { backgroundColor: isFormValid() ? 'blue' : 'gray' }]}
+          disabled={!isFormValid()}
+          onPress={handleSubmit}
+        >
+          <Text style={styles.buttonText}>Submit</Text>
+        </TouchableOpacity>
+        <ScrollView>
+          {Object.keys(formState).map((field) => (
+            <View key={field} style={styles.stateContainer}>
+              <Text style={styles.stateHeader}>Field: {field}</Text>
+              <Text>isValid: {formState[field].isValid.toString()}</Text>
+            </View>
+          ))}
+        </ScrollView>
+      </View>
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: 'white',
+  },
+  container: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 40,
+  },
+  title: {
+    fontSize: 20,
+    marginBottom: 10,
+  },
+  inputContainer: {
+    height: 50,
+    borderWidth: 2,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    backgroundColor: 'white',
+    marginBottom: 20,
+  },
+  inputText: {
+    fontSize: 16,
+    color: 'black',
+  },
+  button: {
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  buttonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  stateContainer: {
+    marginBottom: 10,
+    padding: 10,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+  },
+  stateHeader: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+});
+
+export default App;
+```
+## License
+
+This project is licensed under the MIT License.

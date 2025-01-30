@@ -1,0 +1,83 @@
+version: 2.1
+
+orbs:
+  node: circleci/node@5.0.3
+
+# === Scheduled Pipeline Parameters ===
+parameters:
+  nightly-security-scan:
+    type: boolean
+    default: false
+
+jobs:
+  test:
+    executor: node/default
+    steps:
+      - checkout
+      - node/install-packages:
+          pkg-manager: npm
+      - run: npm run test
+  
+  scan-sast-pr:
+    parameters:
+      default_branch:
+        type: string
+        default: main
+    environment:
+      SEMGREP_REPO_URL: << pipeline.project.git_url >>
+      SEMGREP_BRANCH: << pipeline.git.branch >>
+      SEMGREP_BASELINE_REF: << parameters.default_branch >>
+    docker:
+      - image: returntocorp/semgrep
+    steps:
+      - checkout
+      - run:
+          name: "Semgrep diff scan"
+          command: semgrep ci
+
+  scan-sast-full:
+    parameters:
+      default_branch:
+        type: string
+        default: main
+    environment:
+      SEMGREP_REPO_URL: << pipeline.project.git_url >>
+      SEMGREP_BRANCH: << pipeline.git.branch >>
+    docker:
+      - image: returntocorp/semgrep
+    steps:
+      - checkout
+      - run:
+          name: "Semgrep full scan"
+          command: semgrep ci
+
+workflows:
+  test-and-publish:
+    when:
+      not: << pipeline.parameters.nightly-security-scan >>
+    jobs:
+      - scan-sast-pr:
+          context:
+            - frontend-deploy
+            - security-tools
+            - circleci
+      - scan-sast-full:
+          filters:
+            # ignore any commit on any branch by default
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v.*/
+      - test:
+          context:
+            - frontend-deploy
+            - circleci    
+  
+  scheduled-security-scan:
+    when: << pipeline.parameters.nightly-security-scan >>
+    jobs:
+      - scan-sast-full:
+          context:
+            - security-tools
+            - frontend-deploy
+            - circleci
