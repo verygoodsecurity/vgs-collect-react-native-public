@@ -7,11 +7,20 @@ import React, {
 } from 'react';
 import { TextInput, View, StyleSheet } from 'react-native';
 import VGSCollect from '../collector/VGSCollect';
-import type { ValidationRule } from '../utils/validators/Validator';
+import { type ValidationRule } from '../utils/validators/Validator';
+import {
+  tokenizationConfigValidation,
+  type TokenizationConfig,
+} from '../utils/tokenization/TokenizationConfig';
+import { type VGSSerializer } from '../utils/serializers/ExpDateSeparateSerializer';
 import { validateInput } from '../utils/validators/Validator';
-import type { VGSTextInputState } from './VGSTextInputState';
+import { type VGSTextInputState } from './VGSTextInputState';
 import { PaymentCardBrandsManager } from '../utils/paymentCards/PaymentCardBrandsManager';
-import { getSubmitValue, maskInput, unmaskInput } from '../utils/masker/Masker';
+import {
+  getUnmaskedValue,
+  maskInput,
+  unmaskInput,
+} from '../utils/masker/Masker';
 import { type VGSInputType, inputTypeDefaults } from './VGSInputType';
 import { DEFAULT_CARD_MASK } from '../utils/paymentCards/PaymentCardBrand';
 
@@ -39,6 +48,10 @@ export interface VGSTextInputProps {
    * The divider to use when replacing non-mask characters on form submission.
    */
   divider?: string;
+  /**
+   * An optional array of serializers for the input field.
+   */
+  serializers?: VGSSerializer[];
   /**
    * An array of validation rules for the input field.
    */
@@ -71,6 +84,10 @@ export interface VGSTextInputProps {
    * Style for the text input.
    */
   textStyle?: object;
+  /**
+   * Tokenization configuration for the input field
+   */
+  tokenization?: false | TokenizationConfig;
 }
 
 /**
@@ -87,12 +104,15 @@ const VGSTextInput: React.FC<VGSTextInputProps> = forwardRef((props, ref) => {
     secureTextEntry = false,
     autoCorrect = false,
     containerStyle,
+    tokenization = false,
     textStyle: inputTextStyle,
   } = props;
 
   // Get defaults for the specified type
   const defaultConfig = inputTypeDefaults[type] ?? inputTypeDefaults.text;
-
+  // Get tokenization config if available and valid
+  const tokenize = tokenizationConfigValidation(tokenization, type);
+  const tokenizationConfig = tokenize ? tokenize : undefined;
   // Merge user overrides with defaults
   const initialMask = props.mask ?? defaultConfig?.mask;
   const keyboardType =
@@ -107,7 +127,7 @@ const VGSTextInput: React.FC<VGSTextInputProps> = forwardRef((props, ref) => {
   const [currentMask, setCurrentMask] = useState<string | undefined>(
     initialMask
   );
-
+  const serializers = props.serializers;
   const [text, setText] = useState('');
   const [state, setState] = useState<VGSTextInputState>({
     type,
@@ -159,11 +179,31 @@ const VGSTextInput: React.FC<VGSTextInputProps> = forwardRef((props, ref) => {
   useEffect(() => {
     collector.registerField(
       fieldName,
-      () => getSubmitValue(textRef.current, currentMask, divider),
+      () => {
+        const submitValue = getUnmaskedValue(
+          textRef.current,
+          currentMask,
+          divider
+        );
+
+        if (serializers && type === 'expDate' && submitValue) {
+          let serializedData: Record<string, string> = {};
+          serializers.forEach((serializer) => {
+            const result = serializer.serialize(submitValue as string);
+            // for expDate we have Record<string, string> serializers
+            if (typeof result === 'object' && result !== null) {
+              serializedData = { ...serializedData, ...result };
+            }
+          });
+          return serializedData; // Return only the serialized data
+        }
+        return submitValue as string;
+      },
       () => {
         const rawInput = unmaskInput(textRef.current, currentMask ?? '');
         return validateInput(rawInput, validationRules);
       },
+      tokenizationConfig,
       type,
       validationRules,
       handleFieldConfigUpdate
@@ -285,5 +325,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
-
 export default VGSTextInput;

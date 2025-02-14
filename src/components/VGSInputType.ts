@@ -1,5 +1,10 @@
 import { DEFAULT_CARD_MASK } from '../utils/paymentCards/PaymentCardBrand';
+import type { TokenizationConfig } from '../utils/tokenization/TokenizationConfig';
 import { PatternRule, PaymentCardRule, LengthRule } from '../utils/validators';
+import {
+  VaultStorageType,
+  VaultAliasFormat,
+} from '../utils/tokenization/TokenizationConfig';
 import { CardExpDateRule } from '../utils/validators/CardExpDateRule';
 import { ValidationRule } from '../utils/validators/Validator';
 
@@ -16,7 +21,7 @@ export type VGSInputType =
  * Developers can override these defaults via VGSTextInput props.
  */
 export const inputTypeDefaults: Record<
-  string,
+  VGSInputType,
   {
     mask?: string;
     keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad';
@@ -63,16 +68,16 @@ export const inputTypeDefaults: Record<
     validationRules: [new CardExpDateRule('mmyy', 'INVALID_EXP_DATE')],
   },
 
-  date: {
-    mask: '##/##/####', // e.g., "MM/DD/YYYY"
-    keyboardType: 'numeric',
-    validationRules: [
-      new PatternRule(
-        '^([0-9]{2})\\/?([0-9]{2})\\/?([0-9]{4})$',
-        'Invalid date format (MM/DD/YYYY).'
-      ),
-    ],
-  },
+  // date: {
+  //   mask: '##/##/####', // e.g., "MM/DD/YYYY"
+  //   keyboardType: 'numeric',
+  //   validationRules: [
+  //     new PatternRule(
+  //       '^([0-9]{2})\\/?([0-9]{2})\\/?([0-9]{4})$',
+  //       'Invalid date format (MM/DD/YYYY).'
+  //     ),
+  //   ],
+  // },
 
   ssn: {
     mask: '###-##-####',
@@ -85,3 +90,32 @@ export const inputTypeDefaults: Record<
     ],
   },
 };
+
+// Define default TokenizationConfig for each field type
+export const VGSTokenizationDefaults: Record<VGSInputType, TokenizationConfig> =
+  {
+    text: {
+      storage: VaultStorageType.PERSISTENT,
+      format: VaultAliasFormat.UUID,
+    },
+    card: {
+      storage: VaultStorageType.PERSISTENT,
+      format: VaultAliasFormat.FPE_ACC_NUM_T_FOUR,
+    },
+    cvc: {
+      storage: VaultStorageType.VOLATILE,
+      format: VaultAliasFormat.NUM_LENGTH_PRESERVING,
+    },
+    expDate: {
+      storage: VaultStorageType.PERSISTENT,
+      format: VaultAliasFormat.UUID,
+    },
+    ssn: {
+      storage: VaultStorageType.PERSISTENT,
+      format: VaultAliasFormat.FPE_SSN_T_FOUR,
+    },
+    cardHolderName: {
+      storage: VaultStorageType.PERSISTENT,
+      format: VaultAliasFormat.UUID,
+    },
+  };

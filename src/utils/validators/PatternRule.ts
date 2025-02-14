@@ -1,4 +1,4 @@
-import { ValidationRule } from "./Validator";
+import { ValidationRule } from './Validator';
 
 /**
  * A validation rule that checks if the input string

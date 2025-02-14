@@ -91,7 +91,7 @@ export const unmaskInput = (maskedInput: string, pattern: string): string => {
  * @param divider Optional divider to submit within masked input.
  * @returns The value to submit.
  */
-export const getSubmitValue = (
+export const getUnmaskedValue = (
   maskedValue: string,
   pattern?: string,
   divider?: string

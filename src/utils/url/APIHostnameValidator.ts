@@ -74,14 +74,16 @@ class APIHostnameValidator {
   }
 
   private static normalizeHostname(url: string): string | null {
-    // Create a URL object from the input string
-    const parsedUrl = new URL(url);
-    // Remove the query parameters
-    parsedUrl.search = '';
-    // Remove extra path segments after the first path segment
-    parsedUrl.pathname = parsedUrl.pathname?.split('/')[0] ?? '';
-    // Return the normalized hostname, or null if parsing failed
-    return parsedUrl.hostname || null;
+    if (!/^https?:\/\//i.test(url)) {
+      url = `https://${url}`;
+    }
+    try {
+      const parsedUrl = new URL(url);
+      // Return the hostname directly (ignores query params, paths, etc.)
+      return parsedUrl.hostname;
+    } catch (error) {
+      return null;
+    }
   }
 }
 
