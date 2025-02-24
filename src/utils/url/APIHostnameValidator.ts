@@ -1,5 +1,10 @@
 // APIHostnameValidator.ts
 
+import VGCollectLogger, {
+  VGSLogLevel,
+  VGSLogSeverity,
+} from '../logger/VGSCollectLogger';
+
 class APIHostnameValidator {
   static readonly Constants = {
     validStatuses: [200, 300],
@@ -17,7 +22,9 @@ class APIHostnameValidator {
 
     const normalizedHostname = this.normalizeHostname(hostname);
     if (!normalizedHostname) {
-      console.error(`Error: Invalid hostname: "${hostname}"`);
+      this.logCnameError(
+        'Hostname is invalid (empty) and will be ignored. Default Vault URL will be used.'
+      );
       return false;
     }
     try {
@@ -26,42 +33,37 @@ class APIHostnameValidator {
         tenantId
       );
       if (!url) {
-        console.error(
+        this.logCnameError(
           `Error: Cannot build validation URL with tenantId: "${tenantId}", hostname: "${hostname}"`
         );
         return false;
       }
       const response = await fetch(url);
       if (!response.ok) {
-        console.error(
-          `Error: Cannot resolve hostname "${normalizedHostname}". Status code: ${response.status}`
-        );
-        this.logErrorForStatusCode(response.status, normalizedHostname);
+        const message =
+          response.status === 403
+            ? `A specified host: "${hostname}" was not correct. Looks like you don't activate cname for VGSCollect SDK on the Dashboard`
+            : `Error: Cannot resolve hostname "${hostname}". Status code: ${response.status}`;
+        this.logCnameError(message);
         return false;
       }
 
       const responseText = await response.text();
       return responseText.includes(normalizedHostname);
     } catch (error) {
-      console.error(
+      this.logCnameError(
         `Error: Cannot resolve hostname "${normalizedHostname}". Error: ${error}`
       );
       return false;
     }
   }
 
-  private static logErrorForStatusCode(statusCode: number, hostname: string) {
-    switch (statusCode) {
-      case 403:
-        console.warn(
-          `A specified host: "${hostname}" was not correct. Looks like you don't activate cname for VGSCollect SDK on the Dashboard`
-        );
-        break;
-      default:
-        console.error(
-          `Error: Cannot resolve hostname "${hostname}". Status code: ${statusCode}`
-        );
-    }
+  private static logCnameError(message: string) {
+    VGCollectLogger.getInstance().log({
+      logLevel: VGSLogLevel.WARNING,
+      text: message,
+      severity: VGSLogSeverity.ERROR,
+    });
   }
 
   private static async buildHostValidationURLstring(

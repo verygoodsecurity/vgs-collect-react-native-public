@@ -1,4 +1,4 @@
-import { DEFAULT_CARD_MASK } from '../utils/paymentCards/PaymentCardBrand';
+import { DEFAULT_CARD_MASK_19 } from '../utils/paymentCards/PaymentCardBrand';
 import type { TokenizationConfig } from '../utils/tokenization/TokenizationConfig';
 import { PatternRule, PaymentCardRule, LengthRule } from '../utils/validators';
 import {
@@ -48,7 +48,7 @@ export const inputTypeDefaults: Record<
   },
 
   card: {
-    mask: DEFAULT_CARD_MASK,
+    mask: DEFAULT_CARD_MASK_19,
     keyboardType: 'numeric',
     validationRules: [new PaymentCardRule('INVALID_CARD_NUMBER', false)],
   },

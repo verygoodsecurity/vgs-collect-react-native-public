@@ -4,6 +4,12 @@ import { LengthRule, PatternRule } from '../utils/validators';
 import { ValidationRule } from '../utils/validators/Validator';
 import { PaymentCardBrandsManager } from '../utils/paymentCards/PaymentCardBrandsManager';
 import type { TokenizationConfig } from '../utils/tokenization/TokenizationConfig';
+import { defaultHTTPHeaders } from '../utils/analytics/platform';
+import { VGSError, VGSErrorCode } from '../utils/errors';
+import VGCollectLogger, {
+  VGSLogLevel,
+  VGSLogSeverity,
+} from '../utils/logger/VGSCollectLogger';
 
 type FieldUpdateCallback = (config: {
   mask?: string;
@@ -26,7 +32,10 @@ interface FieldConfig {
   tokenizationConfig?: TokenizationConfig;
   updateCallback?: FieldUpdateCallback;
 }
-
+/**
+ * The main class for the VGSCollect SDK.
+ * It provides methods for registering fields, submitting data, and tokenizing data.
+ */
 class VGSCollect {
   private tenantId: string;
   private environment: string;
@@ -36,10 +45,18 @@ class VGSCollect {
   private isCnameValidating: boolean = false;
   private cnameValidationPromise: Promise<boolean> | null = null;
   private fields: Record<string, FieldConfig> = {};
+  private logger: VGCollectLogger = VGCollectLogger.getInstance();
 
-  constructor(tenantId: string, environment: string) {
-    this.tenantId = tenantId;
-    this.environment = environment;
+  /**
+   * Creates a new VGSCollect instance.
+   *
+   * @param id - The Vault ID.
+   * @param environment - The environment (sandbox, live, live-[region]).
+   */
+  public constructor(id: string, environment: string = 'sandbox') {
+    this.validateConfig(id, environment);
+    this.tenantId = id;
+    this.environment = environment.toLowerCase();
   }
   /**
    * Sets the route ID for the VGSCollect instance.
@@ -49,11 +66,8 @@ class VGSCollect {
    * @throws {Error} If the route ID is not a string.
    */
   public setRouteId(routeId: string) {
-    if (typeof routeId !== `string`) {
-      throw new Error(`routeIdTypeMismatch`);
-    }
+    this.validateRouteId(routeId);
     this.routeId = routeId;
-    return this;
   }
   /**
    * Sets custom headers for the VGSCollect instance.
@@ -71,11 +85,6 @@ class VGSCollect {
    * @returns A Promise that resolves when the CNAME validation is complete.
    */
   public async setCname(cname: string): Promise<void> {
-    if (!cname) {
-      this.cname = undefined;
-      return;
-    }
-
     if (this.isCnameValidating) {
       // If already validating, wait for the existing promise
       await this.cnameValidationPromise;
@@ -148,7 +157,7 @@ class VGSCollect {
     method: string = 'POST',
     extraData: Record<string, any> = {},
     customRequestStructure?: Record<string, any>
-  ): Promise<any> {
+  ): Promise<{ status: number; response: any } | never> {
     try {
       const { data: finalPayload, url } = await this.prepareSubmission(
         async () => {
@@ -163,13 +172,16 @@ class VGSCollect {
         },
         path
       );
-      return await this.submitDataToServer(url, method, finalPayload);
+      const { status, response } = await this.submitDataToServer(
+        url,
+        method,
+        finalPayload
+      );
+      // Log the response
+      this.logger.logResponse(response);
+      return { status, response };
     } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(`Submission failed: ${error.message}`);
-      } else {
-        throw new Error(`Submission failed: ${String(error)}`);
-      }
+      throw error;
     }
   }
 
@@ -177,7 +189,7 @@ class VGSCollect {
    * @description The function for tokenizating data on VGS backend.
    * @returns {Promise<any>} - A Promise that resolves with the tokenization response, or rejects with a validation error.
    */
-  public async tokenize(): Promise<any> {
+  public async tokenize(): Promise<{ status: number; response: any } | never> {
     const { collectedData, fieldMappings } =
       await this.collectFieldTokenizationData();
     const { url } = await this.prepareSubmission(
@@ -185,15 +197,22 @@ class VGSCollect {
       'tokens'
     );
     try {
-      const response = await this.submitDataToServer(url, 'POST', {
+      const { status, response } = await this.submitDataToServer(url, 'POST', {
         data: collectedData,
       });
+      if (!response.ok) {
+        this.logger.logTokenizationResponse(response, {});
+        return { status, response };
+      }
       const responseJson = await response.json();
-      return this.parseTokenizationResponse(responseJson, fieldMappings);
-    } catch (error) {
-      throw new Error(
-        `Tokenization failed: ${error instanceof Error ? error.message : String(error)}`
+      const result = this.parseTokenizationResponse(
+        responseJson,
+        fieldMappings
       );
+      this.logger.logTokenizationResponse(response, result);
+      return { status, response: result };
+    } catch (error) {
+      throw error;
     }
   }
   /**
@@ -222,13 +241,8 @@ class VGSCollect {
     path: string
   ): Promise<{ data: T; url: string }> {
     const data = await dataCollector();
-    const validationErrors = this.validateFields();
-    if (validationErrors) {
-      return Promise.reject({
-        message: 'VGS_FORM_VALIDATION_FAILED',
-        errors: validationErrors,
-      });
-    }
+    // Will throw VGSError if validation fails
+    this.validateFields();
     await this.awaitCnameValidation();
     const url = this.buildUrl(path);
     return { data, url };
@@ -291,7 +305,6 @@ class VGSCollect {
     fieldMappings: TokenizationFieldMapping[]
   ): Record<string, string> {
     const tokenizedData: Record<string, string> = {};
-
     responseJson.data.forEach((item: any, index: number) => {
       const mapping = fieldMappings[index];
       if (mapping) {
@@ -308,26 +321,35 @@ class VGSCollect {
         }
       }
     });
-
     return tokenizedData;
   }
 
   /**
    * @description Validates the form fields using the getValidationErrors() method.
-   * @returns {Record<string, string[]> | null} An object containing validation errors, or null if no errors exist.
    */
-  private validateFields(): Record<string, string[]> | null {
+  private validateFields() {
     const errors: Record<string, string[]> = {};
     for (const fieldName in this.fields) {
       const field = this.fields[fieldName];
       if (!field) continue;
 
-      const validationErrors = field.getValidationErrors(); // Use getValidationErrors()
+      const validationErrors = field.getValidationErrors();
       if (validationErrors.length > 0) {
         errors[fieldName] = validationErrors;
       }
     }
-    return Object.keys(errors).length > 0 ? errors : null;
+    if (Object.keys(errors).length > 0) {
+      this.logger.log({
+        severity: VGSLogSeverity.WARNING,
+        text: `Input data not valid in fileds: ${Object.keys(errors)}`,
+        logLevel: VGSLogLevel.WARNING,
+      });
+      throw new VGSError(
+        VGSErrorCode.InputDataIsNotValid,
+        'VGSCollect: Input data not valid!',
+        errors
+      );
+    }
   }
 
   /**
@@ -335,46 +357,29 @@ class VGSCollect {
    * @param {string} url - The URL to send the request to.
    * @param {string} method - The HTTP method (default is POST).
    * @param {Record<string, any>} data - The data to send.
-   * @returns {Promise<any>} - A Promise that resolves with the JSON response from the server, or rejects with an error.
+   * @returns {Promise<{ status: number; response: any }>} - A Promise that resolves with the server response.
    * @throws {Error} - An error if the request is not successful.
    */
   private async submitDataToServer(
     url: string,
     method: string,
     data: Record<string, any>
-  ): Promise<any> {
+  ): Promise<{ status: number; response: any } | never> {
     try {
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(defaultHTTPHeaders || {}),
+        ...this.customHeaders,
+      };
+      this.logger.logRequest(url, headers, data);
       const response = await fetch(url, {
         method,
-        headers: {
-          'Content-Type': 'application/json',
-          ...this.customHeaders,
-        },
+        headers: headers,
         body: JSON.stringify(data),
       });
-      if (!response.ok) {
-        // Handle non-2xx HTTP status codes
-        const errorText = await response.text(); // Get the error body
-        try {
-          const errorJson = JSON.parse(errorText); // Try to parse as JSON
-          const errorMessage =
-            errorJson.message ||
-            errorJson.error ||
-            errorText ||
-            `HTTP error ${response.status}`; // Prefer JSON message
-          throw new Error(errorMessage); // Throw an error with the server's message
-        } catch (jsonError) {
-          // If not JSON, just use the text or status
-          throw new Error(errorText || `HTTP error ${response.status}`);
-        }
-      }
-      return response;
+      return { status: response.status, response };
     } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(`Submission failed: ${error.message}`);
-      } else {
-        throw new Error(`Submission failed: ${String(error)}`);
-      }
+      throw error;
     }
   }
 
@@ -389,7 +394,22 @@ class VGSCollect {
     const baseUrl = this.routeId
       ? `${this.tenantId}-${this.routeId}.${this.environment}.verygoodproxy.com`
       : `${this.tenantId}.${this.environment}.verygoodproxy.com`;
-    return `https://${baseUrl}/${sanitizedPath.replace(/^\/+/, '')}`;
+    const resultUrl = `https://${baseUrl}/${sanitizedPath.replace(/^\/+/, '')}`;
+    if (this.isValidURL(resultUrl)) {
+      return resultUrl;
+    } else {
+      throw new VGSError(VGSErrorCode.InvalidConfigurationURL, 'Invalid URL', {
+        URL: resultUrl,
+      });
+    }
+  }
+
+  private isValidURL(string: string) {
+    try {
+      return new URL(string) ? true : false;
+    } catch (error) {
+      return false;
+    }
   }
 
   getFieldRules(fieldName: string): ValidationRule[] | undefined {
@@ -485,6 +505,41 @@ class VGSCollect {
       return result;
     }
     return template;
+  }
+
+  private validateConfig(tenantId: string, env: string) {
+    const pattern = /^[a-zA-Z0-9]+$/;
+    if (!tenantId || typeof tenantId !== 'string' || !pattern.test(tenantId)) {
+      throw new VGSError(
+        VGSErrorCode.InvalidVaultConfiguration,
+        'VGSCollect init Error: Invalid tenantId!'
+      );
+    }
+    const lowerCaseEnv = env.toLowerCase();
+
+    const ENVIRONMENTS = ['sandbox', 'live', 'live-'];
+    if (lowerCaseEnv.startsWith('live-')) {
+      return;
+    }
+    if (
+      !ENVIRONMENTS.some(
+        (allowedEnv) => allowedEnv.toLowerCase() === lowerCaseEnv
+      )
+    ) {
+      throw new VGSError(
+        VGSErrorCode.InvalidVaultConfiguration,
+        `VGSCollect -init Error: Available environments are: 'sandbox', 'live' or 'live-' with specified region`
+      );
+    }
+  }
+
+  private validateRouteId(routeId: string) {
+    if (!routeId || typeof routeId !== 'string') {
+      throw new VGSError(
+        VGSErrorCode.InvalidVaultConfiguration,
+        'VGSCollect: Invalid routeId error'
+      );
+    }
   }
 }
 

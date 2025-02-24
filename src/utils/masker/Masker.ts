@@ -112,7 +112,10 @@ export const getUnmaskedValue = (
  * @param patternChar The pattern character defining the type.
  * @returns True if valid, else false.
  */
-const isValidCharacter = (char: string, patternChar: string): boolean => {
+export const isValidCharacter = (
+  char: string,
+  patternChar: string
+): boolean => {
   switch (patternChar) {
     case '#':
       return /^[0-9]$/.test(char); // Digits only

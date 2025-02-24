@@ -15,8 +15,16 @@ import {
   VGSTextInput,
   VGSCardInput,
   VGSCVCInput,
+  VGSError,
+  VGSErrorCode,
+  VGSCollectLogger,
 } from '@vgs/collect-react-native';
 import type { VGSTextInputState } from '@vgs/collect-react-native';
+
+// Enable VGSCollect SDK logs. Do not use in production!!!
+if (process.env.NODE_ENV !== 'production') {
+  VGSCollectLogger.getInstance().enable();
+}
 
 // Setupt your vauldId and environment
 const collector = new VGSCollect('vautlId', 'sandbox');
@@ -58,13 +66,42 @@ const App = () => {
       return; // Prevent submission if any field is invalid
     }
     try {
-      const response = await collector.submit('/post', 'POST');
-      const json = await response.json();
-      console.log('Parsed JSON:', json);
+      const { status, response } = await collector.submit('/post', 'POST');
+      if (response.ok) {
+        try {
+          const responseBody = await response.json();
+          const json = JSON.stringify(responseBody, null, 2);
+          console.log('Success:', json);
+        } catch (error) {
+          console.warn(
+            'Error parsing response body. Body can be empty or your <vaultId> is wrong!',
+            error
+          );
+        }
+      } else {
+        console.warn(`Server responded with error: ${status}\n${response}`);
+        if (status === 400) {
+          console.error('Bad request! Check your VGSCollect config and input.');
+        } else if (status === 500) {
+          console.error('Server issue! Try again later.');
+        }
+      }
     } catch (error) {
-      console.error('Submission failed:', error);
-      // if (error.response) {
-      //   console.error('Error Response:', error.response);
+      if (error instanceof VGSError) {
+        switch (error.code) {
+          case VGSErrorCode.InputDataIsNotValid:
+            for (const fieldName in error.details) {
+              console.error(
+                `Not valid fieldName: ${fieldName}: ${error.details[fieldName].join(', ')}`
+              );
+            }
+            break;
+          default:
+            console.error('VGSError:', error.code, error.message);
+        }
+      } else {
+        console.error('Network or unexpected error:', error);
+      }
     }
   };
 

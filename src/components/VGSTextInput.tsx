@@ -22,7 +22,7 @@ import {
   unmaskInput,
 } from '../utils/masker/Masker';
 import { type VGSInputType, inputTypeDefaults } from './VGSInputType';
-import { DEFAULT_CARD_MASK } from '../utils/paymentCards/PaymentCardBrand';
+import { DEFAULT_CARD_MASK_19 } from '../utils/paymentCards/PaymentCardBrand';
 
 /**
  * Props for the VGSTextInput component.
@@ -269,7 +269,7 @@ const VGSTextInput: React.FC<VGSTextInputProps> = forwardRef((props, ref) => {
         // Update the 'cvc' fields via VGSCollect
         collector.updateCvcFieldForBrand(brandName);
         // Apply the new mask
-        const brandMask = detectedBrand?.mask || DEFAULT_CARD_MASK;
+        const brandMask = detectedBrand?.mask || DEFAULT_CARD_MASK_19;
         setCurrentMask(brandMask);
         maskedInput = maskInput(cleaned, brandMask);
       }

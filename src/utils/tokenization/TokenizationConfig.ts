@@ -1,17 +1,19 @@
 import type { VGSInputType } from '../../components/VGSInputType';
-
+/**
+ * Tokenization configuration for a field. The object can contain `storage` and `format` properties.
+ */
 export interface TokenizationConfig {
-  storage?: VaultStorageType; // Add storage type
-  format?: VaultAliasFormat; // Add format
+  storage?: VaultStorageType; // Add vault storage type
+  format?: VaultAliasFormat; // Add alias format
 }
 
-// Enum for VaultStorageType
+// Enum for VaultStorageType. Details: https://www.verygoodsecurity.com/docs/vault/concepts/tokens#retention-policies
 export enum VaultStorageType {
   PERSISTENT = 'PERSISTENT',
   VOLATILE = 'VOLATILE',
 }
 
-// Enum for VaultAliasFormat
+// Enum for VaultAliasFormat. Details: https://www.verygoodsecurity.com/docs/vault/concepts/tokens#alias-formats
 export enum VaultAliasFormat {
   FPE_ACC_NUM_T_FOUR = 'FPE_ACC_NUM_T_FOUR',
   FPE_ALPHANUMERIC_ACC_NUM_T_FOUR = 'FPE_ALPHANUMERIC_ACC_NUM_T_FOUR',

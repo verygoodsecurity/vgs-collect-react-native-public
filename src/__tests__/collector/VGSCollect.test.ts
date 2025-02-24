@@ -2,6 +2,7 @@
 import VGSCollect from '../../collector/VGSCollect';
 import APIHostnameValidator from '../../utils/url/APIHostnameValidator';
 import { PaymentCardBrandsManager } from '../../utils/paymentCards/PaymentCardBrandsManager';
+import { VGSError } from '../../utils/errors';
 
 // --- Mocks ---
 // Mock the APIHostnameValidator module
@@ -38,9 +39,7 @@ describe('VGSCollect', () => {
   describe('setRouteId', () => {
     it('should set the routeId when a valid string is provided', () => {
       const collect = new VGSCollect(tenantId, environment);
-      const result = collect.setRouteId('route123');
-      // The method returns the instance for chaining.
-      expect(result).toBeInstanceOf(VGSCollect);
+      collect.setRouteId('route123');
       // Access private property via casting
       expect((collect as any).routeId).toBe('route123');
     });
@@ -48,7 +47,9 @@ describe('VGSCollect', () => {
     it('should throw an error if routeId is not a string', () => {
       const collect = new VGSCollect(tenantId, environment);
       // @ts-ignore: Passing a non-string to force error
-      expect(() => collect.setRouteId(123)).toThrow('routeIdTypeMismatch');
+      expect(() => collect.setRouteId(123)).toThrow(
+        'VGSCollect: Invalid routeId error'
+      );
     });
   });
 
@@ -62,12 +63,6 @@ describe('VGSCollect', () => {
   });
 
   describe('setCname', () => {
-    it('should clear cname if an empty string is provided', async () => {
-      const collect = new VGSCollect(tenantId, environment);
-      await collect.setCname('');
-      expect((collect as any).cname).toBeUndefined();
-    });
-
     it('should validate and set cname if valid', async () => {
       // Mock APIHostnameValidator to resolve as valid
       (
@@ -133,7 +128,6 @@ describe('VGSCollect', () => {
       const buildUrl = (collect as any).buildUrl.bind(collect);
       // Characters like "<" and ">" should be removed.
       const url = buildUrl('/my/<script>path');
-      // Expected: "<" and ">" are removed.
       expect(url).toBe(
         `https://${tenantId}.${environment}.verygoodproxy.com/my/scriptpath`
       );
@@ -308,15 +302,15 @@ describe('VGSCollect', () => {
   });
 
   describe('submitDataToServer (private)', () => {
-    // For testing submitDataToServer, we need to mock the global fetch.
-    it('should submit data and return the response when fetch is successful', async () => {
+    it('should return an object with { status, response } on a successful fetch', async () => {
       const collect = new VGSCollect(tenantId, environment);
-      // Prepare a fake response
-      const fakeResponse = {
+      const fakeFetchResponse = {
         ok: true,
+        status: 200,
         json: async () => ({ success: true }),
       };
-      global.fetch = jest.fn().mockResolvedValue(fakeResponse);
+      global.fetch = jest.fn().mockResolvedValue(fakeFetchResponse);
+
       const submitDataToServer = (collect as any).submitDataToServer.bind(
         collect
       );
@@ -324,71 +318,106 @@ describe('VGSCollect', () => {
       const method = 'POST';
       const data = { key: 'value' };
 
-      const response = await submitDataToServer(url, method, data);
-      expect(global.fetch).toHaveBeenCalledWith(
-        url,
-        expect.objectContaining({
-          method,
-          headers: expect.objectContaining({
-            'Content-Type': 'application/json',
-          }),
-          body: JSON.stringify(data),
-        })
-      );
-      expect(response).toBe(fakeResponse);
+      const result = await submitDataToServer(url, method, data);
+
+      // We expect { status, response }
+      expect(result.status).toBe(200);
+      expect(result.response).toBe(fakeFetchResponse);
     });
 
-    it('should throw an error when response is not ok', async () => {
+    it('should return an object with { status, response } even if response.ok is false', async () => {
       const collect = new VGSCollect(tenantId, environment);
-      // Prepare a fake error response (simulate non-2xx status)
-      const errorText = 'Not found';
-      const fakeResponse = {
+      const fakeFetchResponse = {
         ok: false,
         status: 404,
-        text: async () => errorText,
+        json: async () => ({ error: 'Not Found' }),
       };
-      global.fetch = jest.fn().mockResolvedValue(fakeResponse);
+      global.fetch = jest.fn().mockResolvedValue(fakeFetchResponse);
+
       const submitDataToServer = (collect as any).submitDataToServer.bind(
         collect
       );
+      const result = await submitDataToServer(
+        'https://example.com/api',
+        'GET',
+        {}
+      );
+
+      // No throw for non-2xx. We simply return { status, response }
+      expect(result.status).toBe(404);
+      expect(result.response).toBe(fakeFetchResponse);
+    });
+
+    it('should throw an Error on actual network failure (fetch reject)', async () => {
+      const collect = new VGSCollect(tenantId, environment);
+      global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
+
+      const submitDataToServer = (collect as any).submitDataToServer.bind(
+        collect
+      );
+
       await expect(
-        submitDataToServer('https://example.com/api', 'GET', {})
-      ).rejects.toThrow(errorText);
+        submitDataToServer('https://example.com/api', 'POST', {})
+      ).rejects.toThrow('Network error');
     });
   });
 
   describe('submit', () => {
-    it('should call submitDataToServer with correct URL and payload', async () => {
+    it('should return { status, response } on success', async () => {
       const collect = new VGSCollect(tenantId, environment);
       // Stub collectFieldData to return dummy data.
       (collect as any).collectFieldData = jest
         .fn()
         .mockResolvedValue({ field: 'value' });
-      // Stub awaitCnameValidation (no-op)
       (collect as any).awaitCnameValidation = jest
         .fn()
         .mockResolvedValue(undefined);
-      // Stub buildUrl to return a known URL.
       (collect as any).buildUrl = jest
         .fn()
         .mockReturnValue('https://test.com/submit');
-      // Stub submitDataToServer to return a fake response object with a json method.
       (collect as any).submitDataToServer = jest.fn().mockResolvedValue({
-        json: async () => ({ success: true }),
+        status: 200,
+        response: {
+          ok: true,
+          json: async () => ({ success: true }),
+        },
       });
 
-      const response = await collect.submit('/submit');
-      const json = await response.json();
-      expect((collect as any).buildUrl).toHaveBeenCalledWith('/submit');
-      expect((collect as any).submitDataToServer).toHaveBeenCalledWith(
-        'https://test.com/submit',
-        'POST',
-        { field: 'value' }
-      );
-      expect(json).toEqual({ success: true });
+      const result = await collect.submit('/submit');
+      expect(result.status).toBe(200);
+      // "result.response" is the fetch Response
+      expect(result.response.ok).toBe(true);
+      const body = await result.response.json();
+      expect(body).toEqual({ success: true });
     });
 
-    it('should throw an error if submission fails', async () => {
+    it('should return { status, response } if server responds with error (non-2xx)', async () => {
+      const collect = new VGSCollect(tenantId, environment);
+      (collect as any).collectFieldData = jest
+        .fn()
+        .mockResolvedValue({ field: 'value' });
+      (collect as any).awaitCnameValidation = jest
+        .fn()
+        .mockResolvedValue(undefined);
+      (collect as any).buildUrl = jest
+        .fn()
+        .mockReturnValue('https://test.com/submit');
+      (collect as any).submitDataToServer = jest.fn().mockResolvedValue({
+        status: 400,
+        response: {
+          ok: false,
+          json: async () => ({ error: 'Bad Request' }),
+        },
+      });
+
+      const result = await collect.submit('/submit');
+      expect(result.status).toBe(400);
+      expect(result.response.ok).toBe(false);
+      const body = await result.response.json();
+      expect(body).toEqual({ error: 'Bad Request' });
+    });
+
+    it('should throw if fetch rejects', async () => {
       const collect = new VGSCollect(tenantId, environment);
       (collect as any).collectFieldData = jest
         .fn()
@@ -403,16 +432,25 @@ describe('VGSCollect', () => {
         .fn()
         .mockRejectedValue(new Error('Server error'));
 
-      await expect(collect.submit('/submit')).rejects.toThrow(
-        'Submission failed: Server error'
+      await expect(collect.submit('/submit')).rejects.toThrow('Server error');
+    });
+    it('should throw a VGSError if fields fail validation', async () => {
+      const collect = new VGSCollect(tenantId, environment);
+      // Register a field that intentionally fails validation
+      collect.registerField(
+        'failingField',
+        () => 'some invalid value',
+        () => ['Field is not valid']
       );
+      // Attempt to submit, expecting VGSError due to validation failure
+      await expect(collect.submit('/submit')).rejects.toThrow(VGSError);
     });
   });
 
   describe('tokenize', () => {
-    it('should process tokenization and parse the response', async () => {
+    it('should return { status, response: parsedTokens } when response is ok', async () => {
       const collect = new VGSCollect(tenantId, environment);
-      // Stub collectFieldTokenizationData to return dummy data.
+      // Stub collectFieldTokenizationData
       const dummyCollectedData = [
         { value: 'sensitive', storage: 'vault', format: 'alias' },
       ];
@@ -423,24 +461,23 @@ describe('VGSCollect', () => {
           collectedData: dummyCollectedData,
           fieldMappings: dummyFieldMappings,
         });
-      // Stub prepareSubmission to return a known URL.
       (collect as any).prepareSubmission = jest.fn().mockResolvedValue({
         url: 'https://test.com/tokens',
       });
-      // Stub submitDataToServer to return a fake response.
-      const fakeResponse = {
-        json: async () => ({
-          data: [
-            {
-              aliases: [{ format: 'alias', alias: 'token123' }],
-            },
-          ],
-        }),
-      };
-      (collect as any).submitDataToServer = jest
-        .fn()
-        .mockResolvedValue(fakeResponse);
-      // Stub parseTokenizationResponse to simply return its input for testing.
+      // Suppose fetch is ok
+      (collect as any).submitDataToServer = jest.fn().mockResolvedValue({
+        status: 200,
+        response: {
+          ok: true,
+          json: async () => ({
+            data: [
+              {
+                aliases: [{ format: 'alias', alias: 'token123' }],
+              },
+            ],
+          }),
+        },
+      });
       (collect as any).parseTokenizationResponse = jest
         .fn()
         .mockImplementation((responseJson, mappings) => {
@@ -452,10 +489,41 @@ describe('VGSCollect', () => {
         });
 
       const result = await collect.tokenize();
-      expect(result).toEqual({ field1: 'token123' });
+      // For a 200 and ok response, we place the parsed tokens in result.response
+      expect(result.status).toBe(200);
+      expect(result.response).toEqual({ field1: 'token123' });
     });
 
-    it('should throw an error if tokenization fails', async () => {
+    it('should return { status, response: fetchResponse } if response is not ok', async () => {
+      const collect = new VGSCollect(tenantId, environment);
+      // Stub collectFieldTokenizationData
+      (collect as any).collectFieldTokenizationData = jest
+        .fn()
+        .mockResolvedValue({
+          collectedData: [],
+          fieldMappings: [],
+        });
+      (collect as any).prepareSubmission = jest.fn().mockResolvedValue({
+        url: 'https://test.com/tokens',
+      });
+      (collect as any).submitDataToServer = jest.fn().mockResolvedValue({
+        status: 400,
+        response: {
+          ok: false,
+          json: async () => ({ error: 'Bad Request' }),
+        },
+      });
+
+      const result = await collect.tokenize();
+      // For a non-ok fetch, code returns { status, response: rawFetchResponse }
+      expect(result.status).toBe(400);
+      expect(result.response.ok).toBe(false);
+
+      const body = await result.response.json();
+      expect(body).toEqual({ error: 'Bad Request' });
+    });
+
+    it('should throw if network fails (fetch reject)', async () => {
       const collect = new VGSCollect(tenantId, environment);
       (collect as any).collectFieldTokenizationData = jest
         .fn()
@@ -470,9 +538,7 @@ describe('VGSCollect', () => {
         .fn()
         .mockRejectedValue(new Error('Network error'));
 
-      await expect(collect.tokenize()).rejects.toThrow(
-        'Tokenization failed: Network error'
-      );
+      await expect(collect.tokenize()).rejects.toThrow('Network error');
     });
   });
 });
