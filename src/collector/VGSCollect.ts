@@ -4,12 +4,20 @@ import { LengthRule, PatternRule } from '../utils/validators';
 import { ValidationRule } from '../utils/validators/Validator';
 import { PaymentCardBrandsManager } from '../utils/paymentCards/PaymentCardBrandsManager';
 import type { TokenizationConfig } from '../utils/tokenization/TokenizationConfig';
-import { defaultHTTPHeaders } from '../utils/analytics/platform';
 import { VGSError, VGSErrorCode } from '../utils/errors';
 import VGCollectLogger, {
   VGSLogLevel,
   VGSLogSeverity,
 } from '../utils/logger/VGSCollectLogger';
+import VGSAnalyticsClient, {
+  AnalyticEventStatus,
+} from '../utils/analytics/AnalyticsClient';
+import { AnalyticsEventType } from '../utils/analytics/AnalyticsClient';
+import FormAnalyticsDetails from '../utils/analytics/FormAnalyticsDetails';
+import {
+  getTypeAnalyticsString,
+  type VGSInputType,
+} from '../components/VGSInputType';
 
 type FieldUpdateCallback = (config: {
   mask?: string;
@@ -46,7 +54,8 @@ class VGSCollect {
   private cnameValidationPromise: Promise<boolean> | null = null;
   private fields: Record<string, FieldConfig> = {};
   private logger: VGCollectLogger = VGCollectLogger.getInstance();
-
+  private analyticsClient = VGSAnalyticsClient.getInstance();
+  private formAnalyticsDetails: FormAnalyticsDetails;
   /**
    * Creates a new VGSCollect instance.
    *
@@ -57,6 +66,7 @@ class VGSCollect {
     this.validateConfig(id, environment);
     this.tenantId = id;
     this.environment = environment.toLowerCase();
+    this.formAnalyticsDetails = new FormAnalyticsDetails(id, environment);
   }
   /**
    * Sets the route ID for the VGSCollect instance.
@@ -96,9 +106,21 @@ class VGSCollect {
         .then((isValid) => {
           this.isCnameValidating = false;
           this.cname = isValid ? cname : undefined;
+          this.analyticsClient.trackFormEvent(
+            this.formAnalyticsDetails,
+            AnalyticsEventType.HostnameValidation,
+            isValid ? AnalyticEventStatus.Success : AnalyticEventStatus.Failed,
+            { hostname: cname }
+          );
           resolve(isValid);
         })
         .catch((error) => {
+          this.analyticsClient.trackFormEvent(
+            this.formAnalyticsDetails,
+            AnalyticsEventType.HostnameValidation,
+            AnalyticEventStatus.Failed,
+            { hostname: cname }
+          );
           this.isCnameValidating = false;
           this.cname = undefined;
           reject(error);
@@ -122,7 +144,7 @@ class VGSCollect {
     getSubmitValue: () => string | Record<string, string>,
     getValidationErrors: () => string[],
     tokenizationConfig?: TokenizationConfig,
-    type?: string,
+    type?: VGSInputType,
     validationRules: ValidationRule[] = [],
     updateCallback?: FieldUpdateCallback
   ) {
@@ -134,6 +156,12 @@ class VGSCollect {
       validationRules,
       updateCallback,
     };
+    this.analyticsClient.trackFormEvent(
+      this.formAnalyticsDetails,
+      AnalyticsEventType.FieldInit,
+      AnalyticEventStatus.Success,
+      { field: getTypeAnalyticsString(type ?? 'text') }
+    );
   }
   /**
    * Unregisters a field from the VGSCollect instance.
@@ -196,6 +224,16 @@ class VGSCollect {
       () => Promise.resolve({ data: collectedData }),
       'tokens'
     );
+    if (collectedData.length === 0) {
+      this.analyticsClient.trackFormEvent(
+        this.formAnalyticsDetails,
+        AnalyticsEventType.Submit,
+        AnalyticEventStatus.Success,
+        { statusCode: 200 }
+      );
+      this.logger.logTokenizationResponse(200, {});
+      return { status: 200, response: {} };
+    }
     try {
       const { status, response } = await this.submitDataToServer(url, 'POST', {
         data: collectedData,
@@ -209,7 +247,7 @@ class VGSCollect {
         responseJson,
         fieldMappings
       );
-      this.logger.logTokenizationResponse(response, result);
+      this.logger.logTokenizationResponse(status, result);
       return { status, response: result };
     } catch (error) {
       throw error;
@@ -339,13 +377,20 @@ class VGSCollect {
       }
     }
     if (Object.keys(errors).length > 0) {
+      const errorCode = VGSErrorCode.InputDataIsNotValid;
+      this.analyticsClient.trackFormEvent(
+        this.formAnalyticsDetails,
+        AnalyticsEventType.BeforeSubmit,
+        AnalyticEventStatus.Failed,
+        { statusCode: errorCode }
+      );
       this.logger.log({
         severity: VGSLogSeverity.WARNING,
         text: `Input data not valid in fileds: ${Object.keys(errors)}`,
         logLevel: VGSLogLevel.WARNING,
       });
       throw new VGSError(
-        VGSErrorCode.InputDataIsNotValid,
+        errorCode,
         'VGSCollect: Input data not valid!',
         errors
       );
@@ -368,23 +413,46 @@ class VGSCollect {
     try {
       const headers = {
         'Content-Type': 'application/json',
-        ...(defaultHTTPHeaders || {}),
+        ...(VGSAnalyticsClient.getInstance().defaultHttpHeaders || {}),
         ...this.customHeaders,
       };
       this.logger.logRequest(url, headers, data);
+      this.analyticsClient.trackFormEvent(
+        this.formAnalyticsDetails,
+        AnalyticsEventType.BeforeSubmit,
+        AnalyticEventStatus.Success,
+        { statusCode: 200 }
+      );
       const response = await fetch(url, {
         method,
         headers: headers,
         body: JSON.stringify(data),
       });
+      this.analyticsClient.trackFormEvent(
+        this.formAnalyticsDetails,
+        AnalyticsEventType.Submit,
+        response.ok ? AnalyticEventStatus.Success : AnalyticEventStatus.Failed,
+        { statusCode: response.status }
+      );
       return { status: response.status, response };
     } catch (error) {
+      var errorMessage = 'unknown error';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      this.analyticsClient.trackFormEvent(
+        this.formAnalyticsDetails,
+        AnalyticsEventType.Submit,
+        AnalyticEventStatus.Failed,
+        { error: errorMessage }
+      );
       throw error;
     }
   }
 
   private buildUrl(path: string): string {
     // Sanitize the path to prevent injection
+    // eslint-disable-next-line no-useless-escape
     const sanitizedPath = path.replace(/[^\w.\-\/]/g, '');
 
     if (this.cname) {

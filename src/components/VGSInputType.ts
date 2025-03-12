@@ -119,3 +119,23 @@ export const VGSTokenizationDefaults: Record<VGSInputType, TokenizationConfig> =
       format: VaultAliasFormat.UUID,
     },
   };
+
+/// String for analytics events
+export function getTypeAnalyticsString(inputType: VGSInputType): string {
+  switch (inputType) {
+    case 'card':
+      return 'card-number';
+    case 'cardHolderName':
+      return 'card-holder-name';
+    case 'expDate':
+      return 'card-expiration-date';
+    case 'cvc':
+      return 'card-security-code';
+    case 'ssn':
+      return 'ssn';
+    case 'text':
+      return 'text';
+    default:
+      return 'text';
+  }
+}
