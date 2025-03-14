@@ -413,6 +413,7 @@ class VGSCollect {
     try {
       const headers = {
         'Content-Type': 'application/json',
+        ...VGSAnalyticsClient.getInstance().collectHTTPHeaders,
         ...this.customHeaders,
       };
       this.logger.logRequest(url, headers, data);

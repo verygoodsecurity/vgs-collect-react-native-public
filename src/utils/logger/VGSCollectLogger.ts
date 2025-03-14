@@ -118,7 +118,7 @@ class VGCollectLogger {
       console.log(`${statusString}  response body: ${bodyString}`);
     } catch (error) {
       console.error(
-        '❗ Error parsing response body. Body is empty or wrong format:',
+        'VGSCollectLogger: ❗ Error parsing response body. Body is empty or wrong format(expecting JSON). Check you <vaultId> and backend response object:',
         error
       );
     }
