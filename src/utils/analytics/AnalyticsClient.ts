@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 import type FormAnalyticsDetails from './FormAnalyticsDetails';
-import * as packageJson from '../../../package.json';
 import { generateUUID } from '../Utils';
+const VGSCOLLECT_SDK_VERSION = '0.1.0-beta.4';
 
 export enum AnalyticsEventType {
   FieldInit = 'Init',
@@ -46,9 +46,8 @@ class VGSAnalyticsClient {
   collectHTTPHeaders: Record<string, string> = (() => {
     const version = Platform.Version;
     const trStatus = this.shouldCollectAnalytics ? 'default' : 'none';
-    const sdkVersion = packageJson.version;
     return {
-      'vgs-client': `source=rnSDK&medium=vgs-collect&content=${sdkVersion}&osVersion=${version}&tr=${trStatus}`,
+      'vgs-client': `source=rnSDK&medium=vgs-collect&content=${VGSCOLLECT_SDK_VERSION}&osVersion=${version}&tr=${trStatus}`,
     };
   })();
 
@@ -82,7 +81,7 @@ class VGSAnalyticsClient {
       type: type.toString(), // Store enum value as string
       status: status.toString(), // Store enum value as string
       ua: this.userAgentData,
-      version: packageJson.version, // Replace with actual SDK version
+      version: VGSCOLLECT_SDK_VERSION, // Replace with actual SDK version
       source: 'rnSDK',
       localTimestamp: Date.now(),
       vgsCollectSessionId: this.vgsCollectSessionId,
@@ -96,7 +95,6 @@ class VGSAnalyticsClient {
     if (!this.shouldCollectAnalytics) {
       return;
     }
-
     const url = `${this.baseURL}vgs`;
     const encodedJSON = this.encodeData(data);
     try {
