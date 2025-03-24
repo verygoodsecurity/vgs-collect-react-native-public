@@ -23,7 +23,6 @@ describe('ExpDateSeparateSerializer', () => {
   });
 
   it('should handle invalid date format', () => {
-    // TODO: Decide how to handle invalid formats - throw error or return empty strings
     // Currently, it returns empty strings
     expect(serializer.serialize('123')).toEqual({
       [monthFieldName]: '',
@@ -32,7 +31,6 @@ describe('ExpDateSeparateSerializer', () => {
   });
 
   it('should handle empty input', () => {
-    // TODO: Decide how to handle empty input - throw error or return empty strings
     // Currently, it returns empty strings
     expect(serializer.serialize('')).toEqual({
       [monthFieldName]: '',
