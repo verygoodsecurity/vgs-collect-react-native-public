@@ -60,6 +60,19 @@ Ensure you have React Native set up in your project. If not, follow the React Na
 You should have your organization registered at <a href="https://dashboard.verygoodsecurity.com/dashboard/" target="_blank">VGS Dashboard</a>. A Sandbox Vault will be
 pre-created for you. Use your <a href="https://dashboard.verygoodsecurity.com/dashboard/" target="_blank">VGS Dashboard</a>  to start collecting data. If you don’t have an organization registered yet, check the [Quick Integration](getting-started/quick-integration) guides. Use your `<vaultId>` to start collecting data.
 
+## Example app
+You can check our example application [here](./example/src/App.tsx). To run example Application, follow next steps:
+``` bash
+# 1. Download SDK repository
+# 2. In root folder run:
+npm install
+# 3. Navigate to example folder
+cd example
+# 4. Build example app for iOS or Android
+npm run ios
+# 5. Later you can start expo server(optional)
+npx expo start --clear
+```
 ## Quick Start
 
 Import the SDK Components:
@@ -73,6 +86,8 @@ const collector = new VGSCollect('yourVaultId', 'sandbox'); // Use 'live' for pr
 Create Secure Input Fields:
 ```javascript
 <VGSTextInput
+  containerStyle={styles.inputContainer}
+  textStyle={styles.inputText}
   collector={collector}
   fieldName="card_holder"
   type="cardHolderName"
@@ -82,13 +97,40 @@ Create Secure Input Fields:
 ```
 Handle Form Submission:
 ```javascript
+// Handle submit request
 const handleSubmit = async () => {
   try {
-    const { status, response }  = await collector.submit('/post', 'POST');
-    const data = await response.json();
-    console.log('Data submitted:', data);
+    const { status, response } = await collector.submit('/post', 'POST');
+    if (response.ok) {
+      try {
+        const responseBody = await response.json();
+        const json = JSON.stringify(responseBody, null, 2);
+        console.log('Success:', json);
+      } catch (error) {
+        console.warn(
+          'Error parsing response body. Body can be empty or your <vaultId> is wrong!',
+          error
+        );
+      }
+    } else {
+      console.warn(`Server responded with error: ${status}\n${response}`);
+    }
   } catch (error) {
-    console.error('Submission error:', error);
+    if (error instanceof VGSError) {
+      switch (error.code) {
+        case VGSErrorCode.InputDataIsNotValid:
+          for (const fieldName in error.details) {
+            console.error(
+              `Not valid fieldName: ${fieldName}: ${error.details[fieldName].join(', ')}`
+            );
+          }
+          break;
+        default:
+          console.error('VGSError:', error.code, error.message);
+      }
+    } else {
+      console.error('Network or unexpected error:', error);
+    }
   }
 };
 ```
@@ -161,7 +203,7 @@ import { NotEmptyRule, LengthRule, PatternRule } from '@vgs/collect-react-native
   validationRules={[
     new NotEmptyRule('This field is required'),
     new LengthRule(5, 10, 'Length must be between 5 and 10 characters'),
-    new PatternRule(/^[a-zA-Z]+$/, 'Only letters are allowed'),
+    new PatternRule('/^[a-zA-Z]+$/', 'Only letters are allowed'),
   ]}
 />
 ```
