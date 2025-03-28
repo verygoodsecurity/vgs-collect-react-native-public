@@ -56,6 +56,7 @@ class VGSCollect {
   private logger: VGCollectLogger = VGCollectLogger.getInstance();
   private analyticsClient = VGSAnalyticsClient.getInstance();
   private formAnalyticsDetails: FormAnalyticsDetails;
+
   /**
    * Creates a new VGSCollect instance.
    *
@@ -198,6 +199,7 @@ class VGSCollect {
           // Merge non-input extraData with the wrapped input data.
           return { ...wrappedData, ...extraData };
         },
+        this.BASE_VAULT_URL,
         path
       );
       const { status, response } = await this.submitDataToServer(
@@ -215,44 +217,56 @@ class VGSCollect {
 
   /**
    * @description The function for tokenizating data on VGS backend.
-   * @returns {Promise<any>} - A Promise that resolves with the tokenization response, or rejects with a validation error.
+   * @returns {Promise<>} - A Promise that resolves with the tokenization response, or rejects with an error.
    */
-  public async tokenize(): Promise<{ status: number; response: any } | never> {
-    const { collectedData, fieldMappings } =
-      await this.collectFieldTokenizationData();
-    const { url } = await this.prepareSubmission(
-      () => Promise.resolve({ data: collectedData }),
-      'tokens'
-    );
-    if (collectedData.length === 0) {
-      this.analyticsClient.trackFormEvent(
-        this.formAnalyticsDetails,
-        AnalyticsEventType.Submit,
-        AnalyticEventStatus.Success,
-        { statusCode: 200 }
-      );
-      this.logger.logTokenizationResponse(200, {});
-      return { status: 200, response: {} };
-    }
+  public async tokenize(): Promise<
+    { status: number; data: Record<string, string> | any } | never
+  > {
     try {
+      const { collectedData, fieldMappings } =
+        await this.collectFieldTokenizationData();
+      const { url } = await this.prepareSubmission(
+        () => Promise.resolve({ data: collectedData }),
+        this.BASE_TOKENIZATION_URL,
+        'aliases'
+      );
+
+      if (collectedData.length === 0) {
+        this.analyticsClient.trackFormEvent(
+          this.formAnalyticsDetails,
+          AnalyticsEventType.Submit,
+          AnalyticEventStatus.Success,
+          { statusCode: 200 }
+        );
+        this.logger.log({
+          logLevel: VGSLogLevel.WARNING,
+          text: 'No data to tokenize!',
+          severity: VGSLogSeverity.WARNING,
+        });
+        return { status: 200, data: {} };
+      }
+
       const { status, response } = await this.submitDataToServer(url, 'POST', {
         data: collectedData,
       });
+
       if (!response.ok) {
         this.logger.logTokenizationResponse(response, {});
-        return { status, response };
+        return { status, data: response };
       }
+
       const responseJson = await response.json();
       const result = this.parseTokenizationResponse(
         responseJson,
         fieldMappings
       );
-      this.logger.logTokenizationResponse(status, result);
-      return { status, response: result };
+      this.logger.logTokenizationResponse(response, result);
+      return { status, data: result };
     } catch (error) {
       throw error;
     }
   }
+
   /**
    * @description Collects submit data form fields, handling asynchronous operations.
    * @returns {Promise<Record<string, any>>} An object containing the field data.
@@ -276,13 +290,14 @@ class VGSCollect {
   // Helper method for preparing a submission
   private async prepareSubmission<T>(
     dataCollector: () => Promise<T>,
+    baseUrl: string,
     path: string
   ): Promise<{ data: T; url: string }> {
     const data = await dataCollector();
     // Will throw VGSError if validation fails
     this.validateFields();
     await this.awaitCnameValidation();
-    const url = this.buildUrl(path);
+    const url = this.buildUrl(baseUrl, path);
     return { data, url };
   }
 
@@ -386,7 +401,7 @@ class VGSCollect {
       );
       this.logger.log({
         severity: VGSLogSeverity.WARNING,
-        text: `Input data not valid in fileds: ${Object.keys(errors)}`,
+        text: `Input data not valid in fields: ${Object.keys(errors)}`,
         logLevel: VGSLogLevel.WARNING,
       });
       throw new VGSError(
@@ -450,19 +465,20 @@ class VGSCollect {
     }
   }
 
-  private buildUrl(path: string): string {
+  BASE_VAULT_URL = 'verygoodproxy.com';
+  BASE_TOKENIZATION_URL = 'vault-api.verygoodvault.com';
+  private buildUrl(baseDomain: string, path: string = ''): string {
     // Sanitize the path to prevent injection
-    // eslint-disable-next-line no-useless-escape
-    const sanitizedPath = path.replace(/[^\w.\-\/]/g, '');
+    const sanitizedPath = path
+      .replace(/[^\w\-\/]/g, '')
+      .replace(/\/{2,}/g, '/');
 
-    if (this.cname) {
-      // Append the sanitized path to the CNAME. Check for double slashes
-      return `https://${this.cname.replace(/\/+$/, '')}/${sanitizedPath.replace(/^\/+/, '')}`;
-    }
-    const baseUrl = this.routeId
-      ? `${this.tenantId}-${this.routeId}.${this.environment}.verygoodproxy.com`
-      : `${this.tenantId}.${this.environment}.verygoodproxy.com`;
-    const resultUrl = `https://${baseUrl}/${sanitizedPath.replace(/^\/+/, '')}`;
+    const baseUrl = this.cname
+      ? `https://${this.cname.replace(/\/+$/, '')}`
+      : `https://${this.getBaseUrl(baseDomain)}`;
+
+    const resultUrl = `${baseUrl}/${sanitizedPath.replace(/^\/+/, '')}`;
+
     if (this.isValidURL(resultUrl)) {
       return resultUrl;
     } else {
@@ -470,6 +486,14 @@ class VGSCollect {
         URL: resultUrl,
       });
     }
+  }
+
+  private getBaseUrl(baseDomain: string): string {
+    const defaultBaseDomain = baseDomain || this.BASE_VAULT_URL;
+    if (defaultBaseDomain === this.BASE_VAULT_URL && this.routeId) {
+      return `${this.tenantId}-${this.routeId}.${this.environment}.${defaultBaseDomain}`;
+    }
+    return `${this.tenantId}.${this.environment}.${defaultBaseDomain}`;
   }
 
   private isValidURL(string: string) {
@@ -580,7 +604,7 @@ class VGSCollect {
     if (!tenantId || typeof tenantId !== 'string' || !pattern.test(tenantId)) {
       throw new VGSError(
         VGSErrorCode.InvalidVaultConfiguration,
-        'VGSCollect init Error: Invalid tenantId!'
+        'VGSCollect -init Error: Invalid tenantId!'
       );
     }
     const lowerCaseEnv = env.toLowerCase();

@@ -1,3 +1,8 @@
+import VGSCollectLogger, {
+  VGSLogSeverity,
+  VGSLogLevel,
+} from '../logger/VGSCollectLogger';
+
 // Define an interface for serializers
 export interface VGSSerializer {
   serialize(value: string): string | Record<string, string>;
@@ -25,7 +30,11 @@ class ExpDateSeparateSerializer implements VGSSerializer {
       month = value.slice(0, 2);
       year = value.slice(2, 6);
     } else {
-      // Handle invalid format (TODO: throw an error or log a warning)
+      VGSCollectLogger.getInstance().log({
+        logLevel: VGSLogLevel.WARNING,
+        text: `Invalid expiration date format: ${value}. Can not separate month and year.`,
+        severity: VGSLogSeverity.ERROR,
+      });
       month = '';
       year = '';
     }

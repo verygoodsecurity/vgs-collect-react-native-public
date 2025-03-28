@@ -107,7 +107,7 @@ describe('VGSCollect', () => {
       // Set a routeId so that baseUrl uses tenantId-routeId...
       collect.setRouteId('route1');
       const buildUrl = (collect as any).buildUrl.bind(collect);
-      const url = buildUrl('/my/path');
+      const url = buildUrl(collect.BASE_VAULT_URL, '/my/path');
       expect(url).toBe(
         'https://tenant-route1.sandbox.verygoodproxy.com/my/path'
       );
@@ -119,7 +119,7 @@ describe('VGSCollect', () => {
       (collect as any).cname = 'example.com/';
       const buildUrl = (collect as any).buildUrl.bind(collect);
       // Leading slash in path should be trimmed
-      const url = buildUrl('/another/path');
+      const url = buildUrl(collect.BASE_VAULT_URL, '/another/path');
       expect(url).toBe('https://example.com/another/path');
     });
 
@@ -127,7 +127,7 @@ describe('VGSCollect', () => {
       const collect = new VGSCollect(tenantId, environment);
       const buildUrl = (collect as any).buildUrl.bind(collect);
       // Characters like "<" and ">" should be removed.
-      const url = buildUrl('/my/<script>path');
+      const url = buildUrl(collect.BASE_VAULT_URL, '/my/<script>path');
       expect(url).toBe(
         `https://${tenantId}.${environment}.verygoodproxy.com/my/scriptpath`
       );
@@ -446,67 +446,85 @@ describe('VGSCollect', () => {
       await expect(collect.submit('/submit')).rejects.toThrow(VGSError);
     });
   });
-  /** 
   describe('tokenize', () => {
-    it('should return { status, response: parsedTokens } when response is ok', async () => {
-      const collect = new VGSCollect(tenantId, environment);
-      // Stub collectFieldTokenizationData
-      const dummyCollectedData = [
-        { value: 'sensitive', storage: 'vault', format: 'alias' },
-      ];
-      const dummyFieldMappings = [{ key: 'field1', fieldName: 'field1' }];
-      (collect as any).collectFieldTokenizationData = jest
-        .fn()
-        .mockResolvedValue({
-          collectedData: dummyCollectedData,
-          fieldMappings: dummyFieldMappings,
-        });
-      (collect as any).prepareSubmission = jest.fn().mockResolvedValue({
-        url: 'https://test.com/tokens',
+    let collect: VGSCollect;
+
+    beforeEach(() => {
+      collect = new VGSCollect(tenantId, environment);
+      // mocked data
+      (collect as any).collectFieldTokenizationData = jest.fn();
+      (collect as any).prepareSubmission = jest.fn();
+      (collect as any).submitDataToServer = jest.fn();
+      (collect as any).parseTokenizationResponse = jest.fn();
+      (collect as any).BASE_TOKENIZATION_URL = 'vault-api.verygoodvault.com';
+    });
+
+    it('should return empty data when collectedData is empty', async () => {
+      (collect as any).collectFieldTokenizationData.mockResolvedValue({
+        collectedData: [],
+        fieldMappings: [],
       });
-      // Suppose fetch is ok
-      (collect as any).submitDataToServer = jest.fn().mockResolvedValue({
+
+      (collect as any).prepareSubmission.mockResolvedValue({
+        url: 'mocked_url',
+      }); // Mock prepareSubmission
+
+      (collect as any).submitDataToServer.mockResolvedValue({
+        // Mock submitDataToServer for success
+        status: 200,
+        response: { ok: true, json: async () => ({}) },
+      });
+
+      const result = await collect.tokenize();
+      expect(result).toEqual({ status: 200, data: {} });
+    });
+
+    it('should return processed data on successful tokenization', async () => {
+      (collect as any).collectFieldTokenizationData.mockResolvedValue({
+        collectedData: [{ field: 'value' }],
+        fieldMappings: [{ key: 'field', fieldName: 'field' }], // fieldMappings should be an array
+      });
+      (collect as any).prepareSubmission.mockResolvedValue({
+        url: `https://${tenantId}.${environment}.${(collect as any).BASE_TOKENIZATION_URL}/aliases`,
+      });
+      (collect as any).submitDataToServer.mockResolvedValue({
         status: 200,
         response: {
           ok: true,
           json: async () => ({
             data: [
-              {
-                aliases: [{ format: 'alias', alias: 'token123' }],
-              },
+              { aliases: [{ format: 'format', alias: 'tokenized_value' }] },
             ],
           }),
         },
       });
-      (collect as any).parseTokenizationResponse = jest
-        .fn()
-        .mockImplementation((responseJson, mappings) => {
-          const tokenized: Record<string, string> = {};
-          responseJson.data.forEach((item: any, index: number) => {
-            tokenized[mappings[index].key] = item.aliases[0].alias;
-          });
-          return tokenized;
-        });
+      (collect as any).parseTokenizationResponse.mockReturnValue({
+        field: 'tokenized_value', // Corrected return value
+      });
 
       const result = await collect.tokenize();
-      // For a 200 and ok response, we place the parsed tokens in result.response
-      expect(result.status).toBe(200);
-      expect(result.response).toEqual({ field1: 'token123' });
+
+      expect(result).toEqual({
+        status: 200,
+        data: { field: 'tokenized_value' }, // Corrected expectation
+      });
+      expect((collect as any).parseTokenizationResponse).toHaveBeenCalledWith(
+        {
+          data: [{ aliases: [{ format: 'format', alias: 'tokenized_value' }] }],
+        }, // Corrected args
+        [{ key: 'field', fieldName: 'field' }] // Corrected args
+      );
     });
 
-    it('should return { status, response: fetchResponse } if response is not ok', async () => {
-      const collect = new VGSCollect(tenantId, environment);
-      // Stub collectFieldTokenizationData
-      (collect as any).collectFieldTokenizationData = jest
-        .fn()
-        .mockResolvedValue({
-          collectedData: [],
-          fieldMappings: [],
-        });
-      (collect as any).prepareSubmission = jest.fn().mockResolvedValue({
-        url: 'https://test.com/tokens',
+    it('should return original response on failed tokenization', async () => {
+      (collect as any).collectFieldTokenizationData.mockResolvedValue({
+        collectedData: [{ field: 'value' }],
+        fieldMappings: [{ key: 'field', fieldName: 'field' }],
       });
-      (collect as any).submitDataToServer = jest.fn().mockResolvedValue({
+      (collect as any).prepareSubmission.mockResolvedValue({
+        url: `https://${tenantId}.${environment}.${(collect as any).BASE_TOKENIZATION_URL}/aliases`,
+      });
+      (collect as any).submitDataToServer.mockResolvedValue({
         status: 400,
         response: {
           ok: false,
@@ -515,31 +533,133 @@ describe('VGSCollect', () => {
       });
 
       const result = await collect.tokenize();
-      // For a non-ok fetch, code returns { status, response: rawFetchResponse }
-      expect(result.status).toBe(400);
-      expect(result.response.ok).toBe(false);
 
-      const body = await result.response.json();
-      expect(body).toEqual({ error: 'Bad Request' });
+      expect(result).toEqual({
+        status: 400,
+        data: {
+          ok: false,
+          json: expect.any(Function),
+        },
+      });
+      expect((collect as any).parseTokenizationResponse).not.toHaveBeenCalled();
     });
 
-    it('should throw if network fails (fetch reject)', async () => {
-      const collect = new VGSCollect(tenantId, environment);
-      (collect as any).collectFieldTokenizationData = jest
-        .fn()
-        .mockResolvedValue({
-          collectedData: [],
-          fieldMappings: [],
-        });
-      (collect as any).prepareSubmission = jest.fn().mockResolvedValue({
-        url: 'https://test.com/tokens',
+    it('should handle errors during tokenization', async () => {
+      (collect as any).collectFieldTokenizationData.mockResolvedValue({
+        collectedData: [{ field: 'value' }],
+        fieldMappings: [{ key: 'field', fieldName: 'field' }], // fieldMappings should be an array
       });
-      (collect as any).submitDataToServer = jest
-        .fn()
-        .mockRejectedValue(new Error('Network error'));
+      (collect as any).prepareSubmission.mockResolvedValue({
+        url: `https://${tenantId}.${environment}.${(collect as any).BASE_TOKENIZATION_URL}/aliases`,
+      });
+      (collect as any).submitDataToServer.mockRejectedValue(
+        new Error('Network error')
+      );
 
-      await expect(collect.tokenize()).rejects.toThrow('Network error');
+      try {
+        await collect.tokenize();
+        fail('Tokenize should have thrown an error'); // Ensure that an error is thrown
+      } catch (error: any) {
+        expect(error).toBeInstanceOf(Error);
+        expect(error.message).toEqual('Network error');
+      }
+    });
+
+    it('should handle empty response data', async () => {
+      (collect as any).collectFieldTokenizationData.mockResolvedValue({
+        collectedData: [{ field: 'value' }],
+        fieldMappings: [{ key: 'field', fieldName: 'field' }],
+      });
+      (collect as any).prepareSubmission.mockResolvedValue({
+        url: `https://${tenantId}.${environment}.${(collect as any).BASE_TOKENIZATION_URL}/aliases`,
+      });
+      (collect as any).submitDataToServer.mockResolvedValue({
+        status: 200,
+        response: {
+          ok: true,
+          json: async () => ({ data: [] }), // Empty data array
+        },
+      });
+      (collect as any).parseTokenizationResponse.mockReturnValue({});
+
+      const result = await collect.tokenize();
+      expect(result).toEqual({ status: 200, data: {} });
+    });
+
+    it('should handle missing aliases in response', async () => {
+      (collect as any).collectFieldTokenizationData.mockResolvedValue({
+        collectedData: [{ field: 'value' }],
+        fieldMappings: [{ key: 'field', fieldName: 'field' }],
+      });
+      (collect as any).prepareSubmission.mockResolvedValue({
+        url: `https://${tenantId}.${environment}.${(collect as any).BASE_TOKENIZATION_URL}/aliases`,
+      });
+      (collect as any).submitDataToServer.mockResolvedValue({
+        status: 200,
+        response: {
+          ok: true,
+          json: async () => ({ data: [{}] }), // Missing aliases
+        },
+      });
+      (collect as any).parseTokenizationResponse.mockReturnValue({});
+
+      const result = await collect.tokenize();
+      expect(result).toEqual({ status: 200, data: {} });
+    });
+
+    it('should handle missing format in aliases', async () => {
+      (collect as any).collectFieldTokenizationData.mockResolvedValue({
+        collectedData: [{ field: 'value' }],
+        fieldMappings: [{ key: 'field', fieldName: 'field' }],
+      });
+      (collect as any).prepareSubmission.mockResolvedValue({
+        url: `https://${tenantId}.${environment}.${(collect as any).BASE_TOKENIZATION_URL}/aliases`,
+      });
+      (collect as any).submitDataToServer.mockResolvedValue({
+        status: 200,
+        response: {
+          ok: true,
+          json: async () => ({
+            data: [{ aliases: [{ alias: 'tokenized_value' }] }],
+          }), // Missing format
+        },
+      });
+      (collect as any).parseTokenizationResponse.mockReturnValue({});
+
+      const result = await collect.tokenize();
+      expect(result).toEqual({ status: 200, data: {} });
+    });
+
+    it('should handle errors in collectFieldTokenizationData', async () => {
+      (collect as any).collectFieldTokenizationData.mockRejectedValue(
+        new Error('Collect error')
+      );
+
+      try {
+        await collect.tokenize();
+        fail('Tokenize should have thrown an error');
+      } catch (error: any) {
+        expect(error).toBeInstanceOf(Error);
+        expect(error.message).toEqual('Collect error');
+      }
+    });
+
+    it('should handle errors in prepareSubmission', async () => {
+      (collect as any).collectFieldTokenizationData.mockResolvedValue({
+        collectedData: [{ field: 'value' }],
+        fieldMappings: [{ key: 'field', fieldName: 'field' }],
+      });
+      (collect as any).prepareSubmission.mockRejectedValue(
+        new Error('Prepare error')
+      );
+
+      try {
+        await collect.tokenize();
+        fail('Tokenize should have thrown an error');
+      } catch (error: any) {
+        expect(error).toBeInstanceOf(Error);
+        expect(error.message).toEqual('Prepare error');
+      }
     });
   });
-  */
 });

@@ -1,6 +1,6 @@
 /* eslint-disable react-native/no-inline-styles */
 // App.tsx
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   StyleSheet,
   SafeAreaView,
@@ -51,14 +51,24 @@ const App = () => {
   };
 
   // Check if all fields are valid
-  const areAllFieldsValid = () => {
+  const areAllFieldsValid = useCallback(() => {
     for (const fieldName in formFieldsState) {
       if (!formFieldsState[fieldName]?.isValid) {
         return false;
       }
     }
     return true;
-  };
+  }, [formFieldsState]);
+
+  // Set status label
+  const [labelStatus, setLabelStatus] = useState('Waiting for data...');
+
+  // Update labelStatus text when the validity of all fields changes
+  useEffect(() => {
+    setLabelStatus(
+      areAllFieldsValid() ? '- Form is valid! -' : '- Form is not valid: -'
+    );
+  }, [areAllFieldsValid]);
 
   // Handle submit request
   const handleSubmit = async () => {
@@ -71,14 +81,17 @@ const App = () => {
         try {
           const responseBody = await response.json();
           const json = JSON.stringify(responseBody, null, 2);
+          setLabelStatus('- SUCCESS!- ');
           console.log('Success:', json);
         } catch (error) {
+          setLabelStatus('- FAILED! -');
           console.warn(
             'Error parsing response body. Body can be empty or your <vaultId> is wrong!',
             error
           );
         }
       } else {
+        setLabelStatus('FAILED!');
         console.warn(`Server responded with error: ${status}\n${response}`);
         if (status === 400) {
           console.error('Bad request! Check your VGSCollect config and input.');
@@ -87,6 +100,7 @@ const App = () => {
         }
       }
     } catch (error) {
+      setLabelStatus('FAILED!');
       if (error instanceof VGSError) {
         switch (error.code) {
           case VGSErrorCode.InputDataIsNotValid:
@@ -110,6 +124,7 @@ const App = () => {
       <View style={styles.container}>
         <Text style={styles.title}>VGS Collect Example</Text>
         <VGSTextInput
+          testID="card_holder"
           collector={collector}
           fieldName="card_holder"
           type="cardHolderName"
@@ -132,6 +147,7 @@ const App = () => {
           ]}
         />
         <VGSCardInput
+          testID="card_number"
           collector={collector}
           fieldName="card_number"
           iconPosition="right"
@@ -162,6 +178,7 @@ const App = () => {
           }}
         >
           <VGSTextInput
+            testID="expiration_date"
             collector={collector}
             fieldName="expiration_date"
             type="expDate"
@@ -185,6 +202,7 @@ const App = () => {
             textStyle={styles.inputText}
           />
           <VGSCVCInput
+            testID="card_cvc"
             collector={collector}
             fieldName="card_cvc"
             placeholder="CVC/CVV"
@@ -217,6 +235,7 @@ const App = () => {
         >
           <Text style={{ color: 'white' }}>Submit</Text>
         </TouchableOpacity>
+        <Text style={styles.label}>{labelStatus}</Text>
         <ScrollView>
           {Object.keys(formFieldsState).map((fieldName) => {
             const state = formFieldsState[fieldName];
@@ -301,6 +320,12 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 8,
     alignItems: 'center',
+  },
+  label: {
+    marginTop: 10,
+    textAlign: 'center',
+    fontSize: 16,
+    padding: 8,
   },
 });
 

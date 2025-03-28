@@ -1,0 +1,18 @@
+
+appId: "vgscollectreactnative.example" 
+---
+- launchApp
+- tapOn:
+    id: "card_holder"
+- inputText: "John B"
+- tapOn:
+    id: "card_number"
+- inputText: "4111 1111 1111 1111"
+- tapOn:
+    id: "expiration_date"
+- inputText: "12/28"
+- tapOn:
+    id: "card_cvc"
+- inputText: "123"
+- tapOn: "Submit"
+- assertVisible: "- Success!- " 

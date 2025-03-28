@@ -21,10 +21,13 @@
 - [Installation](#installation)
 - [Prerequisites](#prerequisites)
 - [Quick Start](#quick-start)
-- [UI Inputs](#ui-inputs)
-- [Masking Inputs](#masking-inputs)
-- [Custom Validation](#custom-validation)
-- [Example](#example)
+  - [UI Inputs](#ui-inputs)
+  - [Masking Inputs](#masking-inputs)
+  - [Custom Validation](#custom-validation)
+- [iOS Privacy Manifest](#ios-privacy-manifest)
+- [Privacy](#privacy)
+- [Documentation](#documentation)
+- [Releases](#releases)
 - [License](#license)
 
 ## Introduction
@@ -54,8 +57,22 @@ yarn add @vgs/collect-react-native
 Ensure you have React Native set up in your project. If not, follow the React Native Getting Started guide.
 
 ## Prerequisites
-You should have your organization registered at <a href="https://dashboard.verygoodsecurity.com/dashboard/">VGS Dashboard</a>. Sandbox vault will be pre-created for you. You should use your `<vaultId>` to start collecting data.
+You should have your organization registered at <a href="https://dashboard.verygoodsecurity.com/dashboard/" target="_blank">VGS Dashboard</a>. A Sandbox Vault will be
+pre-created for you. Use your <a href="https://dashboard.verygoodsecurity.com/dashboard/" target="_blank">VGS Dashboard</a>  to start collecting data. If you don’t have an organization registered yet, check the [Quick Integration](getting-started/quick-integration) guides. Use your `<vaultId>` to start collecting data.
 
+## Example app
+You can check our example application [here](./example/src/App.tsx). To run example Application, follow next steps:
+``` bash
+# 1. Download SDK repository
+# 2. In root folder run:
+npm install
+# 3. Navigate to example folder
+cd example
+# 4. Build example app for iOS or Android
+npm run ios
+# 5. Later you can start expo server(optional)
+npx expo start --clear
+```
 ## Quick Start
 
 Import the SDK Components:
@@ -69,6 +86,8 @@ const collector = new VGSCollect('yourVaultId', 'sandbox'); // Use 'live' for pr
 Create Secure Input Fields:
 ```javascript
 <VGSTextInput
+  containerStyle={styles.inputContainer}
+  textStyle={styles.inputText}
   collector={collector}
   fieldName="card_holder"
   type="cardHolderName"
@@ -78,13 +97,40 @@ Create Secure Input Fields:
 ```
 Handle Form Submission:
 ```javascript
+// Handle submit request
 const handleSubmit = async () => {
   try {
-    const response = await collector.submit('/post', 'POST');
-    const data = await response.json();
-    console.log('Data submitted:', data);
+    const { status, response } = await collector.submit('/post', 'POST');
+    if (response.ok) {
+      try {
+        const responseBody = await response.json();
+        const json = JSON.stringify(responseBody, null, 2);
+        console.log('Success:', json);
+      } catch (error) {
+        console.warn(
+          'Error parsing response body. Body can be empty or your <vaultId> is wrong!',
+          error
+        );
+      }
+    } else {
+      console.warn(`Server responded with error: ${status}\n${response}`);
+    }
   } catch (error) {
-    console.error('Submission error:', error);
+    if (error instanceof VGSError) {
+      switch (error.code) {
+        case VGSErrorCode.InputDataIsNotValid:
+          for (const fieldName in error.details) {
+            console.error(
+              `Not valid fieldName: ${fieldName}: ${error.details[fieldName].join(', ')}`
+            );
+          }
+          break;
+        default:
+          console.error('VGSError:', error.code, error.message);
+      }
+    } else {
+      console.error('Network or unexpected error:', error);
+    }
   }
 };
 ```
@@ -157,159 +203,28 @@ import { NotEmptyRule, LengthRule, PatternRule } from '@vgs/collect-react-native
   validationRules={[
     new NotEmptyRule('This field is required'),
     new LengthRule(5, 10, 'Length must be between 5 and 10 characters'),
-    new PatternRule(/^[a-zA-Z]+$/, 'Only letters are allowed'),
+    new PatternRule('/^[a-zA-Z]+$/', 'Only letters are allowed'),
   ]}
 />
 ```
+## iOS Privacy Manifest
+VGS Collect React Native SDK **does not directly package or embed** the Privacy Manifest file into your iOS project. Instead, you should manually copy and update Privacy Manifest info from the VGS [Privacy Manifest file](https://github.com/verygoodsecurity/vgs-collect-react-native/blob/main/PrivacyInfo.xcprivacy). Follow the instructions from our [docs](https://www.verygoodsecurity.com/docs/vgs-collect/rn-sdk/privacy-details).
 
-## Example
 
-Below is a complete example demonstrating how to integrate @vgs/collect-react-native into a React Native application. You can also check our [example app](./example).
-```javascript
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
-import { VGSCollect, VGSTextInput, VGSCardInput, VGSCVCInput } from '@vgs/collect-react-native';
-import type { VGSTextInputState } from '@vgs/collect-react-native';
+### Privacy
+The SDK tracks a few key metrics to understand SDK's features usage, which helps us know what areas need improvement. No personal information is tracked.
 
-const collector = new VGSCollect('yourVaultId', 'sandbox');
-
-const App = () => {
-    const [formState, setFormState] = useState<{
-        [key: string]: VGSTextInputState;
-    }>();
-
-  const handleFieldStateChange = (fieldName, state) => {
-    setFormState(prev => ({ ...prev, [fieldName]: state }));
-  };
-
-  const isFormValid = () => {
-    return Object.values(formState).every(field => field.isValid);
-  };
-
-  const handleSubmit = async () => {
-    if (!isFormValid()) {
-      alert('Please fill out all fields correctly.');
-      return;
-    }
-
-    try {
-      const response = await collector.submit('/post', 'POST');
-      const data = await response.json();
-      console.log('Data submitted:', data);
-    } catch (error) {
-      console.error('Submission error:', error);
-    }
-  };
-
-  return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <Text style={styles.title}>VGS Collect Example</Text>
-        <VGSTextInput
-          collector={collector}
-          fieldName="card_holder"
-          type="cardHolderName"
-          placeholder="Card Holder Name"
-          onStateChange={(state) => handleFieldStateChange('card_holder', state)}
-          containerStyle={styles.inputContainer}
-          textStyle={styles.inputText}
-        />
-        <VGSCardInput
-          collector={collector}
-          fieldName="card_number"
-          type="card"
-          placeholder="4111 1111 1111 1111"
-          onStateChange={(state) => handleFieldStateChange('card_number', state)}
-          containerStyle={styles.inputContainer}
-          textStyle={styles.inputText}
-        />
-        <VGSTextInput
-          collector={collector}
-          fieldName="expiration_date"
-          type="expDate"
-          placeholder="MM/YY"
-          onStateChange={(state) => handleFieldStateChange('expiration_date', state)}
-          containerStyle={styles.inputContainer}
-          textStyle={styles.inputText}
-        />
-        <VGSCVCInput
-          collector={collector}
-          fieldName="card_cvc"
-          placeholder="CVC/CVV"
-          onStateChange={(state) => handleFieldStateChange('card_cvc', state)}
-          containerStyle={styles.inputContainer}
-          textStyle={styles.inputText}
-        />
-        <TouchableOpacity
-          style={[styles.button, { backgroundColor: isFormValid() ? 'blue' : 'gray' }]}
-          disabled={!isFormValid()}
-          onPress={handleSubmit}
-        >
-          <Text style={styles.buttonText}>Submit</Text>
-        </TouchableOpacity>
-        <ScrollView>
-          {Object.keys(formState).map((field) => (
-            <View key={field} style={styles.stateContainer}>
-              <Text style={styles.stateHeader}>Field: {field}</Text>
-              <Text>isValid: {formState[field].isValid.toString()}</Text>
-            </View>
-          ))}
-        </ScrollView>
-      </View>
-    </SafeAreaView>
-  );
-};
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: 'white',
-  },
-  container: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 40,
-  },
-  title: {
-    fontSize: 20,
-    marginBottom: 10,
-  },
-  inputContainer: {
-    height: 50,
-    borderWidth: 2,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    backgroundColor: 'white',
-    marginBottom: 20,
-  },
-  inputText: {
-    fontSize: 16,
-    color: 'black',
-  },
-  button: {
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  buttonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  stateContainer: {
-    marginBottom: 10,
-    padding: 10,
-    backgroundColor: '#f9f9f9',
-    borderRadius: 8,
-  },
-  stateHeader: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-});
-
-export default App;
+You can opt-out of metrics collection via `VGSAnalyticsClient`:
 ```
+VGSAnalyticsClient.getInstance().shouldCollectAnalytics = false
+```
+
+### Documentation
+-  SDK Documentation: https://www.verygoodsecurity.com/docs/vgs-collect/rn-sdk
+
+### Releases
+To follow `@vgs/collect-react-native` updates and changes check the [releases](https://github.com/verygoodsecurity/vgs-collect-react-native/releases) page.
+
 ## License
 
-This project is licensed under the MIT License.
+VGS Collect React Native SDK is released under the MIT license. [See LICENSE](https://github.com/verygoodsecurity/vgs-collect-react-native/blob/main/LICENSE) for details.

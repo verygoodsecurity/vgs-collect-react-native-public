@@ -139,7 +139,7 @@ class VGCollectLogger {
     if (!(response instanceof Response)) {
       this.log({
         severity: VGSLogSeverity.ERROR,
-        text: `Response is not a valid Response object: ${response}`,
+        text: `Response is not valid. Response object: ${response}`,
         logLevel: VGSLogLevel.WARNING,
       });
       return;
