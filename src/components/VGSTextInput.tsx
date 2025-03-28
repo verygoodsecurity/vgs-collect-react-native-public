@@ -88,6 +88,10 @@ export interface VGSTextInputProps {
    * Tokenization configuration for the input field
    */
   tokenization?: false | TokenizationConfig;
+  /**
+   * Test id for testing purpose
+   */
+  testID?: string;
 }
 
 /**
@@ -106,6 +110,7 @@ const VGSTextInput: React.FC<VGSTextInputProps> = forwardRef((props, ref) => {
     containerStyle,
     tokenization = false,
     textStyle: inputTextStyle,
+    testID,
   } = props;
 
   // Get defaults for the specified type
@@ -314,6 +319,7 @@ const VGSTextInput: React.FC<VGSTextInputProps> = forwardRef((props, ref) => {
         autoCorrect={autoCorrect}
         style={inputTextStyle}
         ref={textInputRef}
+        testID={testID}
         underlineColorAndroid="transparent"
       />
     </View>
