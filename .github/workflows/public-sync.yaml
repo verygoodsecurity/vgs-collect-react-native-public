@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/create-github-app-token@v2
         id: app-token
@@ -27,4 +29,12 @@ jobs:
           owner: ${{ github.repository_owner }}
           repositories: |
             ${{ env.PUBLIC_REPO }}
+
+      - name: sync
+        run: |
+          gh auth status
+          git branch
+          gh repo view ${{ github.repository_owner }}/${{ env.PUBLIC_REPO }}
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
 
