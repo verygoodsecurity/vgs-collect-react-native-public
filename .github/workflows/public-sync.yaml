@@ -35,9 +35,9 @@ jobs:
       - name: sync
         run: |
           gh auth status
+          git tag
           git remote add target https://x-access-token:$GH_TOKEN@github.com/$REMOTE_REPO.git
-
-          git push --force target main:main
+#          git push --force target main:main
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           REMOTE_REPO: ${{ github.repository_owner }}/${{ env.PUBLIC_REPO_NAME }}
