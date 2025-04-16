@@ -34,8 +34,6 @@ jobs:
 
       - name: sync
         run: |
-          gh auth status
-          git tag
           git remote add target https://x-access-token:$GH_TOKEN@github.com/$REMOTE_REPO.git
           git push --force target main:main
           git push --tags target
