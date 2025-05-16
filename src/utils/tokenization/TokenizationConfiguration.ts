@@ -2,19 +2,19 @@ import type { VGSInputType } from '../../components/VGSInputType';
 /**
  * Tokenization configuration for a field. The object can contain `storage` and `format` properties.
  */
-export interface TokenizationConfig {
-  storage?: VaultStorageType; // Add vault storage type
-  format?: VaultAliasFormat; // Add alias format
+export interface VGSTokenizationConfiguration {
+  storage?: VGSVaultStorageType; // Add vault storage type
+  format?: VGSVaultAliasFormat; // Add alias format
 }
 
 // Enum for VaultStorageType. Details: https://www.verygoodsecurity.com/docs/vault/concepts/tokens#retention-policies
-export enum VaultStorageType {
+export enum VGSVaultStorageType {
   PERSISTENT = 'PERSISTENT',
   VOLATILE = 'VOLATILE',
 }
 
 // Enum for VaultAliasFormat. Details: https://www.verygoodsecurity.com/docs/vault/concepts/tokens#alias-formats
-export enum VaultAliasFormat {
+export enum VGSVaultAliasFormat {
   FPE_ACC_NUM_T_FOUR = 'FPE_ACC_NUM_T_FOUR',
   FPE_ALPHANUMERIC_ACC_NUM_T_FOUR = 'FPE_ALPHANUMERIC_ACC_NUM_T_FOUR',
   FPE_SIX_T_FOUR = 'FPE_SIX_T_FOUR',
@@ -33,20 +33,20 @@ export enum VaultAliasFormat {
 }
 
 export function tokenizationConfigValidation(
-  value: false | TokenizationConfig,
+  value: false | VGSTokenizationConfiguration,
   inputType: VGSInputType
-): TokenizationConfig | false {
+): VGSTokenizationConfiguration | false {
   if (
     typeof value === 'object' &&
     value !== null &&
     'storage' in value &&
     'format' in value
   ) {
-    if (inputType === 'cvc' && value.storage !== VaultStorageType.VOLATILE) {
+    if (inputType === 'cvc' && value.storage !== VGSVaultStorageType.VOLATILE) {
       return false;
     } else if (
       inputType === 'card' &&
-      value.storage !== VaultStorageType.PERSISTENT
+      value.storage !== VGSVaultStorageType.PERSISTENT
     ) {
       return false;
     }

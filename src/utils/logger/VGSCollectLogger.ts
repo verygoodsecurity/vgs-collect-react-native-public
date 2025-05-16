@@ -96,7 +96,7 @@ class VGCollectLogger {
     if (!this.isEnabled) {
       return;
     }
-    console.log(`⬆️ Send VGSCollectSDK request url: ${url}))`);
+    console.log(`⬆️ Send VGSCollectSDK request url: ${url}`);
     const headersString = JSON.stringify(headers, null, 2);
     console.log(`⬆️ Send VGSCollectSDK request headers: ${headersString}`);
     const payloadString = JSON.stringify(payload, null, 2);
