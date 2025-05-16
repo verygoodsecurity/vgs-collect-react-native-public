@@ -1,6 +1,6 @@
 {
   "name": "@vgs/collect-react-native",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "VGS Collect React Native SDK",
   "source": "./src/index.tsx",
   "main": "./lib/commonjs/index.js",
@@ -53,14 +53,14 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/verygoodsecurity/vgs-collect-react-native.git"
+    "url": "git+https://github.com/verygoodsecurity/vgs-collect-react-native-public.git"
   },
   "author": "Dmytro Khludkov <dmytro.khludkov@vgs.io> (https://github.com/dmytrokhl)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/verygoodsecurity/vgs-collect-react-native/issues"
+    "url": "https://github.com/verygoodsecurity/vgs-collect-react-native-public/issues"
   },
-  "homepage": "https://github.com/verygoodsecurity/vgs-collect-react-native#readme",
+  "homepage": "https://github.com/verygoodsecurity/vgs-collect-react-native-public#readme",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },

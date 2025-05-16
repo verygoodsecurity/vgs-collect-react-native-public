@@ -1,10 +1,10 @@
 import { DEFAULT_CARD_MASK_19 } from '../utils/paymentCards/PaymentCardBrand';
-import type { TokenizationConfig } from '../utils/tokenization/TokenizationConfig';
+import type { VGSTokenizationConfiguration } from '../utils/tokenization/TokenizationConfiguration';
 import { PatternRule, PaymentCardRule, LengthRule } from '../utils/validators';
 import {
-  VaultStorageType,
-  VaultAliasFormat,
-} from '../utils/tokenization/TokenizationConfig';
+  VGSVaultStorageType,
+  VGSVaultAliasFormat,
+} from '../utils/tokenization/TokenizationConfiguration';
 import { CardExpDateRule } from '../utils/validators/CardExpDateRule';
 import { ValidationRule } from '../utils/validators/Validator';
 
@@ -92,33 +92,35 @@ export const inputTypeDefaults: Record<
 };
 
 // Define default TokenizationConfig for each field type
-export const VGSTokenizationDefaults: Record<VGSInputType, TokenizationConfig> =
-  {
-    text: {
-      storage: VaultStorageType.PERSISTENT,
-      format: VaultAliasFormat.UUID,
-    },
-    card: {
-      storage: VaultStorageType.PERSISTENT,
-      format: VaultAliasFormat.FPE_ACC_NUM_T_FOUR,
-    },
-    cvc: {
-      storage: VaultStorageType.VOLATILE,
-      format: VaultAliasFormat.NUM_LENGTH_PRESERVING,
-    },
-    expDate: {
-      storage: VaultStorageType.PERSISTENT,
-      format: VaultAliasFormat.UUID,
-    },
-    ssn: {
-      storage: VaultStorageType.PERSISTENT,
-      format: VaultAliasFormat.FPE_SSN_T_FOUR,
-    },
-    cardHolderName: {
-      storage: VaultStorageType.PERSISTENT,
-      format: VaultAliasFormat.UUID,
-    },
-  };
+export const VGSTokenizationConfigurationType: Record<
+  VGSInputType,
+  VGSTokenizationConfiguration
+> = {
+  text: {
+    storage: VGSVaultStorageType.PERSISTENT,
+    format: VGSVaultAliasFormat.UUID,
+  },
+  card: {
+    storage: VGSVaultStorageType.PERSISTENT,
+    format: VGSVaultAliasFormat.FPE_ACC_NUM_T_FOUR,
+  },
+  cvc: {
+    storage: VGSVaultStorageType.VOLATILE,
+    format: VGSVaultAliasFormat.NUM_LENGTH_PRESERVING,
+  },
+  expDate: {
+    storage: VGSVaultStorageType.PERSISTENT,
+    format: VGSVaultAliasFormat.UUID,
+  },
+  ssn: {
+    storage: VGSVaultStorageType.PERSISTENT,
+    format: VGSVaultAliasFormat.FPE_SSN_T_FOUR,
+  },
+  cardHolderName: {
+    storage: VGSVaultStorageType.PERSISTENT,
+    format: VGSVaultAliasFormat.UUID,
+  },
+};
 
 /// String for analytics events
 export function getTypeAnalyticsString(inputType: VGSInputType): string {

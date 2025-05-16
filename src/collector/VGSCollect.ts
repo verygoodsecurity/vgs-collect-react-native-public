@@ -3,7 +3,7 @@ import APIHostnameValidator from '../utils/url/APIHostnameValidator';
 import { LengthRule, PatternRule } from '../utils/validators';
 import { ValidationRule } from '../utils/validators/Validator';
 import { PaymentCardBrandsManager } from '../utils/paymentCards/PaymentCardBrandsManager';
-import type { TokenizationConfig } from '../utils/tokenization/TokenizationConfig';
+import type { VGSTokenizationConfiguration } from '../utils/tokenization/TokenizationConfiguration';
 import { VGSError, VGSErrorCode } from '../utils/errors';
 import VGCollectLogger, {
   VGSLogLevel,
@@ -18,6 +18,7 @@ import {
   getTypeAnalyticsString,
   type VGSInputType,
 } from '../components/VGSInputType';
+import { getVaultAPIPath, ValutAPIVersion } from './ValutAPI';
 
 type FieldUpdateCallback = (config: {
   mask?: string;
@@ -37,7 +38,7 @@ interface FieldConfig {
   mask?: string;
   validationRules?: ValidationRule[];
   type?: string;
-  tokenizationConfig?: TokenizationConfig;
+  tokenizationConfig?: VGSTokenizationConfiguration;
   updateCallback?: FieldUpdateCallback;
 }
 /**
@@ -144,7 +145,7 @@ class VGSCollect {
     fieldName: string,
     getSubmitValue: () => string | Record<string, string>,
     getValidationErrors: () => string[],
-    tokenizationConfig?: TokenizationConfig,
+    tokenizationConfig?: VGSTokenizationConfiguration,
     type?: VGSInputType,
     validationRules: ValidationRule[] = [],
     updateCallback?: FieldUpdateCallback
@@ -215,56 +216,84 @@ class VGSCollect {
     }
   }
 
-  /**
-   * @description The function for tokenizating data on VGS backend.
-   * @returns {Promise<>} - A Promise that resolves with the tokenization response, or rejects with an error.
-   */
-  public async tokenize(): Promise<
-    { status: number; data: Record<string, string> | any } | never
-  > {
+  public async createAliases(): Promise<{
+    status: number;
+    data: Record<string, string> | any;
+  }> {
     try {
-      const { collectedData, fieldMappings } =
-        await this.collectFieldTokenizationData();
-      const { url } = await this.prepareSubmission(
-        () => Promise.resolve({ data: collectedData }),
-        this.BASE_TOKENIZATION_URL,
-        'aliases'
+      return await this._handleTokenization(
+        ValutAPIVersion.v2,
+        this.collectFieldTokenizationData.bind(this)
       );
-
-      if (collectedData.length === 0) {
-        this.analyticsClient.trackFormEvent(
-          this.formAnalyticsDetails,
-          AnalyticsEventType.Submit,
-          AnalyticEventStatus.Success,
-          { statusCode: 200 }
-        );
-        this.logger.log({
-          logLevel: VGSLogLevel.WARNING,
-          text: 'No data to tokenize!',
-          severity: VGSLogSeverity.WARNING,
-        });
-        return { status: 200, data: {} };
-      }
-
-      const { status, response } = await this.submitDataToServer(url, 'POST', {
-        data: collectedData,
-      });
-
-      if (!response.ok) {
-        this.logger.logTokenizationResponse(response, {});
-        return { status, data: response };
-      }
-
-      const responseJson = await response.json();
-      const result = this.parseTokenizationResponse(
-        responseJson,
-        fieldMappings
-      );
-      this.logger.logTokenizationResponse(response, result);
-      return { status, data: result };
     } catch (error) {
       throw error;
     }
+  }
+
+  public async tokenize(): Promise<{
+    status: number;
+    data: Record<string, string> | any;
+  }> {
+    try {
+      return await this._handleTokenization(
+        ValutAPIVersion.v1,
+        this.collectFieldTokenizationData.bind(this)
+      );
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  private async _handleTokenization(
+    apiVersion: ValutAPIVersion,
+    collectedDataFetcher: () => Promise<{
+      collectedData: any[];
+      fieldMappings: TokenizationFieldMapping[];
+    }>
+  ): Promise<{ status: number; data: Record<string, string> | any } | never> {
+    const apiPath = getVaultAPIPath(apiVersion);
+    const { collectedData, fieldMappings } = await collectedDataFetcher();
+    const { url } = await this.prepareSubmission(
+      () => Promise.resolve({ data: collectedData }),
+      this.BASE_VAULT_URL,
+      apiPath
+    );
+
+    if (collectedData.length === 0) {
+      this.analyticsClient.trackFormEvent(
+        this.formAnalyticsDetails,
+        AnalyticsEventType.Submit,
+        AnalyticEventStatus.Success,
+        { statusCode: 200 }
+      );
+      this.logger.log({
+        logLevel: VGSLogLevel.WARNING,
+        text: 'No data to tokenize!',
+        severity: VGSLogSeverity.WARNING,
+      });
+      return { status: 200, data: {} };
+    }
+
+    const upstreamData =
+      apiVersion === ValutAPIVersion.v1 ? 'tokenization' : 'vaultApi';
+    const { status, response } = await this.submitDataToServer(
+      url,
+      'POST',
+      {
+        data: collectedData,
+      },
+      { upstream: upstreamData }
+    );
+
+    if (!response.ok) {
+      this.logger.logTokenizationResponse(response, {});
+      return { status, data: response };
+    }
+
+    const responseJson = await response.json();
+    const result = this.parseTokenizationResponse(responseJson, fieldMappings);
+    this.logger.logTokenizationResponse(response, result);
+    return { status, data: result };
   }
 
   /**
@@ -423,7 +452,8 @@ class VGSCollect {
   private async submitDataToServer(
     url: string,
     method: string,
-    data: Record<string, any>
+    data: Record<string, any>,
+    analyticsData?: Record<string, any>
   ): Promise<{ status: number; response: any } | never> {
     try {
       const headers = {
@@ -436,7 +466,7 @@ class VGSCollect {
         this.formAnalyticsDetails,
         AnalyticsEventType.BeforeSubmit,
         AnalyticEventStatus.Success,
-        { statusCode: 200 }
+        { statusCode: 200, analyticsData }
       );
       const response = await fetch(url, {
         method,
@@ -447,7 +477,7 @@ class VGSCollect {
         this.formAnalyticsDetails,
         AnalyticsEventType.Submit,
         response.ok ? AnalyticEventStatus.Success : AnalyticEventStatus.Failed,
-        { statusCode: response.status }
+        { statusCode: response.status, analyticsData }
       );
       return { status: response.status, response };
     } catch (error) {
@@ -459,14 +489,13 @@ class VGSCollect {
         this.formAnalyticsDetails,
         AnalyticsEventType.Submit,
         AnalyticEventStatus.Failed,
-        { error: errorMessage }
+        { error: errorMessage, analyticsData }
       );
       throw error;
     }
   }
 
   BASE_VAULT_URL = 'verygoodproxy.com';
-  BASE_TOKENIZATION_URL = 'vault-api.verygoodvault.com';
   private buildUrl(baseDomain: string, path: string = ''): string {
     // Sanitize the path to prevent injection
     const sanitizedPath = path

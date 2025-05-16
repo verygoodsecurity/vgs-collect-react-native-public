@@ -10,8 +10,8 @@ import VGSCollect from '../collector/VGSCollect';
 import { type ValidationRule } from '../utils/validators/Validator';
 import {
   tokenizationConfigValidation,
-  type TokenizationConfig,
-} from '../utils/tokenization/TokenizationConfig';
+  type VGSTokenizationConfiguration,
+} from '../utils/tokenization/TokenizationConfiguration';
 import { type VGSSerializer } from '../utils/serializers/ExpDateSeparateSerializer';
 import { validateInput } from '../utils/validators/Validator';
 import { type VGSTextInputState } from './VGSTextInputState';
@@ -87,7 +87,7 @@ export interface VGSTextInputProps {
   /**
    * Tokenization configuration for the input field
    */
-  tokenization?: false | TokenizationConfig;
+  tokenization?: false | VGSTokenizationConfiguration;
   /**
    * Test id for testing purpose
    */
