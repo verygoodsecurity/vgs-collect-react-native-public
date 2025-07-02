@@ -59,9 +59,9 @@ class VGSCollect {
   private formAnalyticsDetails: FormAnalyticsDetails;
 
   /**
-   * Creates a new VGSCollect instance.
+   * Creates a new VGSCollect instance with Vault Id.
    *
-   * @param id - The Vault ID.
+   * @param id - The VGS Vault ID.
    * @param environment - The environment (sandbox, live, live-[region]).
    */
   public constructor(id: string, environment: string = 'sandbox') {
@@ -69,6 +69,19 @@ class VGSCollect {
     this.tenantId = id;
     this.environment = environment.toLowerCase();
     this.formAnalyticsDetails = new FormAnalyticsDetails(id, environment);
+  }
+
+  /**
+   * Creates a new VGSCollect instance with AccoutId Id.
+   *
+   * @param accountId - The Card Management API AccoutId Id.
+   * @param environment - The environment (sandbox, live).
+   */
+  public static createWithAccountId(
+    accountId: string,
+    environment: string = 'sandbox'
+  ): VGSCollect {
+    return new VGSCollect(accountId, environment);
   }
   /**
    * Sets the route ID for the VGSCollect instance.
@@ -228,6 +241,35 @@ class VGSCollect {
     } catch (error) {
       throw error;
     }
+  }
+
+  private buildCmpAPIUrl(path: string): string {
+    const environment = this.environment.toLowerCase();
+    const baseUrl =
+      environment === 'sandbox'
+        ? 'https://sandbox.vgsapi.com'
+        : 'https://vgsapi.com';
+    const formattedPath = path.startsWith('/') ? path : `/${path}`;
+
+    return `${baseUrl}${formattedPath}`;
+  }
+
+  /**
+   * @description Creates a new card in the Card Management API(https://www.verygoodsecurity.com/docs/api/card-management#tag/card-management/POST/cards).
+   * @returns {Promise<{ status: number; response: any }>} - A Promise that resolves with the server response.
+   * @throws {VGSError} - If validation fails or if the request is not successful.
+   * @requires **Authorization** - Card Management API requires **authToken** and proper **Content-Type** set in `customHeaders`.
+   */
+  public async createCard(): Promise<{ status: number; response: any }> {
+    // Will throw VGSError if validation fails
+    this.validateFields();
+    this.setCustomHeaders(this.customHeaders);
+    // prepare cmp json data
+    const fieldsData = await this.collectFieldData();
+    const data = { data: { attributes: fieldsData } };
+    // get the URL for the cmp API
+    const url = this.buildCmpAPIUrl(`cards`);
+    return this.submitDataToServer(url, 'POST', data, { upstream: 'cmp' });
   }
 
   public async tokenize(): Promise<{
