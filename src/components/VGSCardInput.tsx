@@ -1,15 +1,15 @@
 // VGSCardInput.tsx
-import React, { useState } from 'react';
+import { useState, forwardRef } from 'react';
 import { View, Image, StyleSheet } from 'react-native';
-import VGSTextInput from './VGSTextInput';
-import type { VGSTextInputProps } from './VGSTextInput';
+import type { VGSTextInputProps, VGSTextInputRef } from './VGSTextInputBase';
+import { VGSTextInputBase}  from './VGSTextInputBase';
 import type { VGSTextInputState } from './VGSTextInputState';
 import { PaymentCardBrandsManager } from '../utils/paymentCards/PaymentCardBrandsManager';
 
 /**
  * Specific Props for the VGSCardInput component.
  */
-interface VGSCardInputProps extends Omit<VGSTextInputProps, 'type'> {
+export interface VGSCardInputProps extends Omit<VGSTextInputProps, 'type'> {
   /**
    * Width of the card brand icon.
    * @default 42
@@ -53,7 +53,7 @@ interface VGSCardInputProps extends Omit<VGSTextInputProps, 'type'> {
  * A Secure component for inputting payment card details with a pre-defefined config such as type, validation rules, masks.
  * It automatically detects the card brand and displays the corresponding icon.
  */
-const VGSCardInput: React.FC<VGSCardInputProps> = ({
+const VGSCardInput = forwardRef<VGSTextInputRef, VGSCardInputProps>(({
   iconPosition = 'right',
   iconWidth = 42,
   iconHeight = 24,
@@ -64,7 +64,7 @@ const VGSCardInput: React.FC<VGSCardInputProps> = ({
   iconStyle,
   containerHeight = 50,
   ...otherProps
-}) => {
+}, ref) => {
   const manager = PaymentCardBrandsManager.getInstance();
   const [brandIcon, setBrandIcon] = useState<any>(
     manager.getBrandIcon('unknown')
@@ -82,8 +82,9 @@ const VGSCardInput: React.FC<VGSCardInputProps> = ({
     <View
       style={[styles.container, containerStyle, { height: containerHeight }]}
     >
-      <VGSTextInput
+      <VGSTextInputBase
         {...otherProps}
+        ref={ref}
         type="card"
         onStateChange={handleStateChange}
         textStyle={[
@@ -136,7 +137,7 @@ const VGSCardInput: React.FC<VGSCardInputProps> = ({
       )}
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {
