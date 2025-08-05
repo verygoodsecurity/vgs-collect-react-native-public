@@ -70,19 +70,7 @@ class VGSCollect {
     this.environment = environment.toLowerCase();
     this.formAnalyticsDetails = new FormAnalyticsDetails(id, environment);
   }
-
-  /**
-   * Creates a new VGSCollect instance with AccoutId Id.
-   *
-   * @param accountId - The Card Management API AccoutId Id.
-   * @param environment - The environment (sandbox, live).
-   */
-  public static createWithAccountId(
-    accountId: string,
-    environment: string = 'sandbox'
-  ): VGSCollect {
-    return new VGSCollect(accountId, environment);
-  }
+   
   /**
    * Sets the route ID for the VGSCollect instance.
    *
@@ -94,6 +82,7 @@ class VGSCollect {
     this.validateRouteId(routeId);
     this.routeId = routeId;
   }
+
   /**
    * Sets custom headers for the VGSCollect instance.
    *
@@ -258,18 +247,24 @@ class VGSCollect {
    * @description Creates a new card in the Card Management API(https://www.verygoodsecurity.com/docs/api/card-management#tag/card-management/POST/cards).
    * @returns {Promise<{ status: number; response: any }>} - A Promise that resolves with the server response.
    * @throws {VGSError} - If validation fails or if the request is not successful.
-   * @requires **Authorization** - Card Management API requires **authToken** and proper **Content-Type** set in `customHeaders`.
+   * @requires **token** - A JWT Access token for Card Management API.
    */
-  public async createCard(): Promise<{ status: number; response: any }> {
-    // Will throw VGSError if validation fails
+  public async createCard(token: string, extraData: Record<string, string> = {}): Promise<{ status: number; response: any }> {
+    // will throw VGSError if validation fails
+    this.validateAccessToken(token)
     this.validateFields();
-    this.setCustomHeaders(this.customHeaders);
+    // set CMP API headers
+    const headers = {"Content-Type": "application/vnd.api+json",
+                      "Authorization": "Bearer "+token }
+    this.setCustomHeaders(headers);
     // prepare cmp json data
     const fieldsData = await this.collectFieldData();
-    const data = { data: { attributes: fieldsData } };
+    const cmpData = { data: { attributes: fieldsData } };
+    // Merge non-input extraData with the wrapped input data.
+    const submitData = { ...cmpData, ...extraData };
     // get the URL for the cmp API
     const url = this.buildCmpAPIUrl(`cards`);
-    return this.submitDataToServer(url, 'POST', data, { upstream: 'cmp' });
+    return this.submitDataToServer(url, 'POST', submitData, { upstream: 'cmp' });
   }
 
   public async tokenize(): Promise<{
@@ -481,6 +476,30 @@ class VGSCollect {
         errors
       );
     }
+  }
+
+  /**
+   * @description Validates the cmp access token.
+   */
+  private validateAccessToken(token: string) {
+    if (token.length > 0) {
+      return
+    }
+      const errorCode = VGSErrorCode.IvalidAccessToken;
+      this.analyticsClient.trackFormEvent(
+        this.formAnalyticsDetails,
+        AnalyticsEventType.BeforeSubmit,
+        AnalyticEventStatus.Failed,
+        { statusCode: errorCode }
+      );
+      this.logger.log({
+        severity: VGSLogSeverity.ERROR,
+        text: `Access token is required for -createCard(:) request!`,
+        logLevel: VGSLogLevel.WARNING,
+      });
+      throw new VGSError(
+        errorCode,
+        'VGSCollect: Access token is null or empty!');
   }
 
   /**

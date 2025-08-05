@@ -1,9 +1,9 @@
 /* eslint-disable react-native/no-inline-styles */
 // VGSCVCInput.tsx
-import React, { useState } from 'react';
+import { useState, forwardRef } from 'react';
 import { View, Image, StyleSheet } from 'react-native';
-import VGSTextInput from './VGSTextInput';
-import type { VGSTextInputProps } from './VGSTextInput';
+import type { VGSTextInputProps, VGSTextInputRef } from './VGSTextInputBase';
+import { VGSTextInputBase}  from './VGSTextInputBase';
 import type { VGSTextInputState } from './VGSTextInputState';
 
 const CVCImage = require('../assets/cardIcons/cvc3-light.png');
@@ -11,7 +11,7 @@ const CVCImage = require('../assets/cardIcons/cvc3-light.png');
 /**
  * Props for the VGSCVCInput component.
  */
-interface VGSCVCInputProps extends Omit<VGSTextInputProps, 'type'> {
+export interface VGSCVCInputProps extends Omit<VGSTextInputProps, 'type'> {
   /**
    * Width of the CVC image.
    * @default 48
@@ -54,19 +54,21 @@ interface VGSCVCInputProps extends Omit<VGSTextInputProps, 'type'> {
  * A Secute component for inputting CVC/CVV codes with a pre-defefined config such as type, validation rules, mask.
  * It displays an image of the CVC code location on the card.
  */
-const VGSCVCInput: React.FC<VGSCVCInputProps> = ({
-  secureTextEntry = true,
-  iconPosition = 'right',
-  iconWidth = 42,
-  iconHeight = 24,
-  iconPadding = 8,
-  onStateChange,
-  containerStyle,
-  textStyle: textStyle,
-  iconStyle,
-  containerHeight = 50,
-  ...otherProps
-}) => {
+const VGSCVCInput = forwardRef<VGSTextInputRef, VGSCVCInputProps>((
+  {
+    secureTextEntry = true,
+    iconPosition = 'right',
+    iconWidth = 42,
+    iconHeight = 24,
+    iconPadding = 8,
+    onStateChange,
+    containerStyle,
+    textStyle: textStyle,
+    iconStyle,
+    containerHeight = 50,
+    ...otherProps
+  }, ref
+) => {
   const [cvcIcon, setCVCIcon] = useState<any>(CVCImage);
 
   const handleStateChange = (newState: VGSTextInputState) => {
@@ -81,9 +83,10 @@ const VGSCVCInput: React.FC<VGSCVCInputProps> = ({
     <View
       style={[styles.container, containerStyle, { height: containerHeight }]}
     >
-      <VGSTextInput
+      <VGSTextInputBase
         {...otherProps}
         type="cvc"
+        ref={ref}
         secureTextEntry={secureTextEntry}
         onStateChange={handleStateChange}
         textStyle={[
@@ -133,7 +136,7 @@ const VGSCVCInput: React.FC<VGSCVCInputProps> = ({
       )}
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

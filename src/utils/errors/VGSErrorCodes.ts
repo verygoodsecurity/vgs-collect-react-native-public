@@ -13,6 +13,8 @@ export enum VGSErrorCode {
   // When can't get access to file source
   SourceNotAvailable = 1150,
   // *** Other errors ***
+  // When token is null or empty.
+  IvalidAccessToken = 1300,
   // When VGS config URL is not valid.
   InvalidVaultConfiguration = 1470,
   // When VGS config URL is not valid.
