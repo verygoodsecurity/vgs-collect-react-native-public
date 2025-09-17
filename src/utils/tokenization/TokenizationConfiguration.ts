@@ -7,13 +7,13 @@ export interface VGSTokenizationConfiguration {
   format?: VGSVaultAliasFormat; // Add alias format
 }
 
-// Enum for VaultStorageType. Details: https://www.verygoodsecurity.com/docs/vault/concepts/tokens#retention-policies
+/** Enum for VaultStorageType. Details: https://www.verygoodsecurity.com/docs/vault/concepts/tokens#retention-policies */
 export enum VGSVaultStorageType {
   PERSISTENT = 'PERSISTENT',
   VOLATILE = 'VOLATILE',
 }
 
-// Enum for VaultAliasFormat. Details: https://www.verygoodsecurity.com/docs/vault/concepts/tokens#alias-formats
+/** Enum for VaultAliasFormat. Details: https://www.verygoodsecurity.com/docs/vault/concepts/tokens#alias-formats */
 export enum VGSVaultAliasFormat {
   FPE_ACC_NUM_T_FOUR = 'FPE_ACC_NUM_T_FOUR',
   FPE_ALPHANUMERIC_ACC_NUM_T_FOUR = 'FPE_ALPHANUMERIC_ACC_NUM_T_FOUR',

@@ -99,6 +99,7 @@ export interface VGSTextInputProps {
   testID?: string;
 }
 
+/** Ref methods for VGSTextInput component */
 export interface VGSTextInputRef {
   focus(): void;
   blur(): void;

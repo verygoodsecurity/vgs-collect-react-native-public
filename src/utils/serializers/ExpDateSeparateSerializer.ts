@@ -7,12 +7,15 @@ import VGSCollectLogger, {
 export interface VGSSerializer {
   serialize(value: string): string | Record<string, string>;
 }
-
-// Implement a separate serializer for expDate
+/** Serializer that splits an expiration date into separate month and year fields. */
 class ExpDateSeparateSerializer implements VGSSerializer {
   private monthFieldName: string;
   private yearFieldName: string;
-
+  /**
+   * Create an ExpDateSeparateSerializer.
+   * @param monthFieldName - The field name for the month part.
+   * @param yearFieldName - The field name for the year part.
+   */
   public constructor(monthFieldName: string, yearFieldName: string) {
     this.monthFieldName = monthFieldName;
     this.yearFieldName = yearFieldName;

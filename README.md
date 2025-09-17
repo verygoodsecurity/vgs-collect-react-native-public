@@ -208,7 +208,7 @@ import { NotEmptyRule, LengthRule, PatternRule } from '@vgs/collect-react-native
 />
 ```
 ## iOS Privacy Manifest
-VGS Collect React Native SDK **does not directly package or embed** the Privacy Manifest file into your iOS project. Instead, you should manually copy and update Privacy Manifest info from the VGS [Privacy Manifest file](https://github.com/verygoodsecurity/vgs-collect-react-native/blob/main/PrivacyInfo.xcprivacy). Follow the instructions from our [docs](https://www.verygoodsecurity.com/docs/vgs-collect/rn-sdk/privacy-details).
+VGS Collect React Native SDK **does not directly package or embed** the Privacy Manifest file into your iOS project. Instead, you should manually copy and update Privacy Manifest info from the VGS [Privacy Manifest file](https://github.com/verygoodsecurity/vgs-collect-react-native-public/blob/main/PrivacyInfo.xcprivacy). Follow the instructions from our [docs](https://www.verygoodsecurity.com/docs/vgs-collect/rn-sdk/privacy-details).
 
 
 ### Privacy
@@ -223,8 +223,8 @@ VGSAnalyticsClient.getInstance().shouldCollectAnalytics = false
 -  SDK Documentation: https://www.verygoodsecurity.com/docs/vgs-collect/rn-sdk
 
 ### Releases
-To follow `@vgs/collect-react-native` updates and changes check the [releases](https://github.com/verygoodsecurity/vgs-collect-react-native/releases) page.
+To follow `@vgs/collect-react-native` updates and changes check the [releases](https://github.com/verygoodsecurity/vgs-collect-react-native-public/releases) page.
 
 ## License
 
-VGS Collect React Native SDK is released under the MIT license. [See LICENSE](https://github.com/verygoodsecurity/vgs-collect-react-native/blob/main/LICENSE) for details.
+VGS Collect React Native SDK is released under the MIT license. [See LICENSE](https://github.com/verygoodsecurity/vgs-collect-react-native-public/blob/main/LICENSE) for details.

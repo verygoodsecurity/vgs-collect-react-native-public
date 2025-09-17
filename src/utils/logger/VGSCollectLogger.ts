@@ -27,8 +27,9 @@ export interface VGSLogEvent {
   severity: VGSLogSeverity;
 }
 
-/**
- * VGSLogger class.
+/** Singleton Logger class for VGSCollect SDK.
+ * It provides methods to enable/disable logging and log events, requests, and responses.
+ * Logging MUST BE DISABLED in production builds!
  */
 class VGCollectLogger {
   private static instance: VGCollectLogger;

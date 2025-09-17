@@ -14,13 +14,23 @@ export class VGSDate implements VGSDateInterface {
   month: number;
   year: number;
 
+  /**
+   * Creates a new VGSDate instance.
+   * @param day - The day of the month.
+   * @param month - The month of the year.
+   * @param year - The year.
+   */
   public constructor(date: number, month: number, year: number) {
     this.day = date;
     this.month = month;
     this.year = year;
   }
 
-  /**  Create VGSDate from string with given format */
+  /**  Create VGSDate from string with given format 
+   * @param dateString - The date string to parse.
+   * @param format - The format of the date string ('ddmmyyyy', 'mmddyyyy', 'yyyymmdd').
+   * @returns A VGSDate instance or null if parsing fails.
+  */
   public static dateFromString(dateString: string, format: VGSDateFormatType): VGSDate | null {
     if (dateString.length === 8) {
       var day = NaN
@@ -86,10 +96,14 @@ export class VGSDate implements VGSDateInterface {
     return this.gte(start) && this.lte(end);
   }
 }
-
-/** Type representing supported date formats */
+/** Type representing supported date formats
+ * 'ddmmyyyy' - day, month, year
+ * 'mmddyyyy' - month, day, year
+ * 'yyyymmdd' - year, month, day
+ */
 export type VGSDateFormatType = 'ddmmyyyy' | 'mmddyyyy' | 'yyyymmdd';
 
+/** Class representing a date range validation rule. */
 export class DateRangeRule extends ValidationRule {
   private dateFormat: VGSDateFormatType;
   private startDate: VGSDate | null = null;
@@ -101,7 +115,10 @@ export class DateRangeRule extends ValidationRule {
    * @param start - Optional start date for the valid range.
    * @param end - Optional end date for the valid range.
    */
-  public constructor(dateFormat: VGSDateFormatType, errorMessage: string, start?: VGSDate, end?: VGSDate) {
+  public constructor(dateFormat: VGSDateFormatType,
+                   errorMessage: string,
+                         start?: VGSDate,
+                           end?: VGSDate) {
     super(errorMessage);
     this.dateFormat = dateFormat;
     this.startDate = start ?? null;

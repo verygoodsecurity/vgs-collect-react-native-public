@@ -41,9 +41,8 @@ interface FieldConfig {
   tokenizationConfig?: VGSTokenizationConfiguration;
   updateCallback?: FieldUpdateCallback;
 }
-/**
- * The main class for the VGSCollect SDK.
- * It provides methods for registering fields, submitting data, and tokenizing data.
+/** Main class for managing data collection, validation, and submission to VGS.
+ * It handles field registration, CNAME validation, data submission, and tokenization.
  */
 class VGSCollect {
   private tenantId: string;
@@ -177,7 +176,6 @@ class VGSCollect {
   }
 
   /**
-   * @description The main function for submitting the form data.
    * @param {string} path - The API endpoint path.
    * @param {string} method - The HTTP method (default is POST).
    * @param {Record<string, any>} extraData - Additional data to send.
@@ -244,7 +242,7 @@ class VGSCollect {
   }
 
   /**
-   * @description Creates a new card in the Card Management API(https://www.verygoodsecurity.com/docs/api/card-management#tag/card-management/POST/cards).
+   *  Creates a new card in the Card Management API(https://www.verygoodsecurity.com/docs/api/card-management#tag/card-management/POST/cards).
    * @returns {Promise<{ status: number; response: any }>} - A Promise that resolves with the server response.
    * @throws {VGSError} - If validation fails or if the request is not successful.
    * @requires **token** - A JWT Access token for Card Management API.
@@ -334,7 +332,7 @@ class VGSCollect {
   }
 
   /**
-   * @description Collects submit data form fields, handling asynchronous operations.
+   *  Collects submit data form fields, handling asynchronous operations.
    * @returns {Promise<Record<string, any>>} An object containing the field data.
    */
   private async collectFieldData(): Promise<Record<string, any>> {
@@ -375,7 +373,7 @@ class VGSCollect {
   }
 
   /**
-   * @description Collects data from fields with tokenization config, handling asynchronous operations.
+   *  Collects data from fields with tokenization config, handling asynchronous operations.
    * @returns {Promise<Record<string, any>>} An object containing the field data.
    */
   private async collectFieldTokenizationData(): Promise<{
@@ -444,7 +442,7 @@ class VGSCollect {
   }
 
   /**
-   * @description Validates the form fields using the getValidationErrors() method.
+   *  Validates the form fields using the getValidationErrors() method.
    */
   private validateFields() {
     const errors: Record<string, string[]> = {};
@@ -479,7 +477,7 @@ class VGSCollect {
   }
 
   /**
-   * @description Validates the cmp access token.
+   *  Validates the cmp access token.
    */
   private validateAccessToken(token: string) {
     if (token.length > 0) {
@@ -503,7 +501,7 @@ class VGSCollect {
   }
 
   /**
-   * @description Submits data to the server using fetch.
+   *  Submits data to the server using fetch.
    * @param {string} url - The URL to send the request to.
    * @param {string} method - The HTTP method (default is POST).
    * @param {Record<string, any>} data - The data to send.

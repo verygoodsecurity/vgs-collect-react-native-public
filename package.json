@@ -82,6 +82,7 @@
     "react-native": "0.76.5",
     "react-native-builder-bob": "^0.35.2",
     "release-it": "^17.10.0",
+    "typedoc": "^0.28.12",
     "typescript": "^5.2.2"
   },
   "overrides": {
