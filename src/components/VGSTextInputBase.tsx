@@ -22,12 +22,14 @@ import {
 } from '../utils/masker/Masker';
 import { type VGSInputType, inputTypeDefaults } from './VGSInputType';
 import { DEFAULT_CARD_MASK_19 } from '../utils/paymentCards/PaymentCardBrand';
+import { type AutoCompleteType } from './types/AutoCompleteType';
 
 export interface VGSPredefinedInputProps
   extends Omit<VGSTextInputProps, 'fieldName' | 'type'> {
   fieldName?: string;
   type?: VGSInputType;
 }
+
 
 /**
  * Props for the VGSTextInput component.
@@ -97,6 +99,17 @@ export interface VGSTextInputProps {
    * Test id for testing purpose
    */
   testID?: string;
+  /**
+   * The autoComplete attribute for the input field.
+   */
+  autoComplete?: AutoCompleteType;
+  /**
+   * Sets whether autofill is enabled or disabled for the input field.
+   * This property maps to the native `importantForAutofill` attribute on Android.
+   * On iOS, autofill behavior is primarily controlled via the `autoComplete` prop.
+   * Note: The `importantForAutofill` attribute is only available on Android API level 26 and above.
+   */
+  importantForAutofill?: 'auto' | 'no' | 'noExcludeDescendants' | 'yes' | 'yesExcludeDescendants';
 }
 
 /** Ref methods for VGSTextInput component */
