@@ -129,6 +129,8 @@ const CollectCardData = () => {
           fieldName="card_holder"
           type="cardHolderName"
           placeholder="Card Holder Name"
+          autoComplete='cc-name'
+          importantForAutofill='yes'
           onStateChange={(state: any) =>
             handleFieldStateChange('card_holder', state)
           }
@@ -152,6 +154,8 @@ const CollectCardData = () => {
           fieldName="card_number"
           iconPosition="right"
           placeholder="4111 1111 1111 1111"
+          autoComplete='cc-number'
+          importantForAutofill='yes'
           onStateChange={(state: any) =>
             handleFieldStateChange('card_number', state)
           }

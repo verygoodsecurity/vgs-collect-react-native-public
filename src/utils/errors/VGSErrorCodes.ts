@@ -1,4 +1,4 @@
-// Error codes for VGS Collect SDK errors
+/** Error codes for VGS Collect SDK errors */
 export enum VGSErrorCode {
   // *** Text input data errors ***
   // When input data is not valid, but required to be valid

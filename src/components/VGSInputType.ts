@@ -13,6 +13,7 @@ export type VGSInputType =
   | 'card'
   | 'cardHolderName'
   | 'expDate'
+  | 'date'
   | 'cvc'
   | 'ssn';
 
@@ -68,16 +69,10 @@ export const inputTypeDefaults: Record<
     validationRules: [new CardExpDateRule('mmyy', 'INVALID_EXP_DATE')],
   },
 
-  // date: {
-  //   mask: '##/##/####', // e.g., "MM/DD/YYYY"
-  //   keyboardType: 'numeric',
-  //   validationRules: [
-  //     new PatternRule(
-  //       '^([0-9]{2})\\/?([0-9]{2})\\/?([0-9]{4})$',
-  //       'Invalid date format (MM/DD/YYYY).'
-  //     ),
-  //   ],
-  // },
+  date: {
+    mask: '##-##-####', // e.g., "MM-DD-YYYY"
+    keyboardType: 'numeric',
+  },
 
   ssn: {
     mask: '###-##-####',
@@ -109,6 +104,10 @@ export const VGSTokenizationConfigurationType: Record<
     format: VGSVaultAliasFormat.NUM_LENGTH_PRESERVING,
   },
   expDate: {
+    storage: VGSVaultStorageType.PERSISTENT,
+    format: VGSVaultAliasFormat.UUID,
+  },
+  date: {
     storage: VGSVaultStorageType.PERSISTENT,
     format: VGSVaultAliasFormat.UUID,
   },

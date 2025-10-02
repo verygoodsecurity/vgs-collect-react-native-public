@@ -74,6 +74,7 @@ const CardholderInput =  forwardRef<VGSTextInputRef, VGSPredefinedInputProps>(
   }
 );
 
+
 export interface VGSTextInputComponent
   extends React.ForwardRefExoticComponent<
     VGSTextInputProps & React.RefAttributes<VGSTextInputRef>
@@ -84,6 +85,7 @@ export interface VGSTextInputComponent
   CardHolder: typeof CardholderInput;
 }
 
+/** Base input component for collecting sensitive data */
 export const VGSTextInput = Object.assign(VGSTextInputBase, {
   CardNumber: CardNumberInput,
   CVC: CVCInput,

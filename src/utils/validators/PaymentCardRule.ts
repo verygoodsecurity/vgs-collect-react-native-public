@@ -3,6 +3,7 @@ import { LuhnCheckRule } from './LuhnCheckRule';
 import { PaymentCardBrandsManager } from '../paymentCards/PaymentCardBrandsManager';
 import { CheckSumAlgorithmType } from '../paymentCards/PaymentCardBrand';
 
+/** Class representing a payment card validation rule. */
 export class PaymentCardRule extends ValidationRule {
   private validateUnknownCardBrand: boolean;
 

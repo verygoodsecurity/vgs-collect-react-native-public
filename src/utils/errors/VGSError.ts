@@ -1,5 +1,6 @@
 import { VGSErrorCode } from './VGSErrorCodes';
 
+/** Class representing an error in the VGS Collect SDK. */
 export class VGSError extends Error {
   code: VGSErrorCode;
   details?: any;
