@@ -5,6 +5,7 @@ import React, {
   forwardRef,
 } from 'react';
 import { TextInput, View, StyleSheet } from 'react-native';
+import type { AccessibilityRole } from 'react-native';
 import VGSCollect from '../collector/VGSCollect';
 import { type ValidationRule } from '../utils/validators/Validator';
 import {
@@ -110,6 +111,22 @@ export interface VGSTextInputProps {
    * Note: The `importantForAutofill` attribute is only available on Android API level 26 and above.
    */
   importantForAutofill?: 'auto' | 'no' | 'noExcludeDescendants' | 'yes' | 'yesExcludeDescendants';
+   /**
+    * Whether this input is accessible. Defaults to true.
+    */
+   accessible?: boolean;
+   /**
+    * Accessibility label describing the purpose of the field (will never include sensitive value).
+    */
+   accessibilityLabel?: string;
+   /**
+    * Optional accessibility hint providing extra guidance.
+    */
+   accessibilityHint?: string;
+   /**
+    * Optional override for accessibility role. Defaults to 'text'.
+    */
+  accessibilityRole?: AccessibilityRole;
 }
 
 /** Ref methods for VGSTextInput component */
@@ -135,6 +152,10 @@ export const VGSTextInputBase = forwardRef<VGSTextInputRef, VGSTextInputProps>((
     tokenization = false,
     textStyle: inputTextStyle,
     testID,
+    accessible = true,
+    accessibilityLabel,
+    accessibilityHint,
+    accessibilityRole = 'text',
   } = props;
 
   // Get defaults for the specified type
@@ -345,6 +366,11 @@ export const VGSTextInputBase = forwardRef<VGSTextInputRef, VGSTextInputProps>((
         ref={textInputRef}
         testID={testID}
         underlineColorAndroid="transparent"
+         accessible={accessible}
+         accessibilityLabel={accessibilityLabel}
+         accessibilityHint={accessibilityHint}
+         accessibilityRole={accessibilityRole}
+         accessibilityState={{ disabled: false, selected: state.isFocused, busy: state.validationErrors.length > 0 && state.isDirty }}
       />
     </View>
   );
