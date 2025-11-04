@@ -25,6 +25,12 @@ import { type VGSInputType, inputTypeDefaults } from './VGSInputType';
 import { DEFAULT_CARD_MASK_19 } from '../utils/paymentCards/PaymentCardBrand';
 import { type AutoCompleteType } from './types/AutoCompleteType';
 
+// Always provide a deterministic default placeholder color so that if a previous screen
+// set a custom placeholderTextColor and a recycled native view is reused (during Fast Refresh
+// or certain navigation optimizations), inputs without an explicit color don't inherit the
+// stale one. This approximates the platform default neutral gray.
+const DEFAULT_PLACEHOLDER_COLOR = '#9CA3AF';
+
 export interface VGSPredefinedInputProps
   extends Omit<VGSTextInputProps, 'fieldName' | 'type'> {
   fieldName?: string;
@@ -72,6 +78,10 @@ export interface VGSTextInputProps {
    * The placeholder text for the input field.
    */
   placeholder?: string;
+  /**
+   * Color of the placeholder text. If not provided, React Native default is used.
+   */
+  placeholderTextColor?: string;
   /**
    * The keyboard type for the input field (e.g., 'numeric', 'email-address').
    */
@@ -145,6 +155,7 @@ export const VGSTextInputBase = forwardRef<VGSTextInputRef, VGSTextInputProps>((
     type = 'text', // default field type if not provided
     onStateChange,
     placeholder,
+    placeholderTextColor,
     divider,
     secureTextEntry = false,
     autoCorrect = false,
@@ -359,6 +370,9 @@ export const VGSTextInputBase = forwardRef<VGSTextInputRef, VGSTextInputProps>((
         onFocus={handleFocus}
         onBlur={handleBlur}
         placeholder={placeholder}
+        // Always provide a concrete placeholderTextColor to prevent native view
+        // from keeping a previous instance's color when this prop is omitted.
+        placeholderTextColor={placeholderTextColor ?? DEFAULT_PLACEHOLDER_COLOR}
         keyboardType={keyboardType}
         secureTextEntry={secureTextEntry}
         autoCorrect={autoCorrect}
