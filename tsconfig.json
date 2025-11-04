@@ -31,5 +31,6 @@
     "target": "ESNext",
     "verbatimModuleSyntax": true
   },
-  "extends": "expo/tsconfig.base"
+  "extends": "expo/tsconfig.base",
+  "exclude": ["docs"]
 }

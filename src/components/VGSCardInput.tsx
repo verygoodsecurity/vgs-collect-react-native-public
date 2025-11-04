@@ -63,6 +63,7 @@ const VGSCardInput = forwardRef<VGSTextInputRef, VGSCardInputProps>(({
   textStyle: textStyle,
   iconStyle,
   containerHeight = 50,
+  accessibilityLabel = 'Payment card number',
   ...otherProps
 }, ref) => {
   const manager = PaymentCardBrandsManager.getInstance();
@@ -87,6 +88,7 @@ const VGSCardInput = forwardRef<VGSTextInputRef, VGSCardInputProps>(({
         ref={ref}
         type="card"
         onStateChange={handleStateChange}
+        accessibilityLabel={accessibilityLabel}
         textStyle={[
           // eslint-disable-next-line react-native/no-inline-styles
           {

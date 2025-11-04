@@ -45,6 +45,7 @@ const ExpDateInput = forwardRef<VGSTextInputRef, VGSPredefinedInputProps>(
       fieldName = 'expDate',
       type = 'expDate',
       serializers = [new ExpDateSeparateSerializer('exp_month','exp_year')],
+      accessibilityLabel = 'Card expiration date',
       ...rest
     } = props;
     return (
@@ -54,6 +55,7 @@ const ExpDateInput = forwardRef<VGSTextInputRef, VGSPredefinedInputProps>(
         fieldName={fieldName}
         type={type}
         serializers={serializers}
+        accessibilityLabel={accessibilityLabel}
       />
     );
   }
@@ -62,13 +64,14 @@ const ExpDateInput = forwardRef<VGSTextInputRef, VGSPredefinedInputProps>(
 /** CardholderInput wrapper */
 const CardholderInput =  forwardRef<VGSTextInputRef, VGSPredefinedInputProps>(
   (props, ref) => {
-    const { fieldName = 'cardholder', type = 'cardHolderName', ...rest } = props;
+    const { fieldName = 'cardholder', type = 'cardHolderName', accessibilityLabel = 'Cardholder name', ...rest } = props;
     return (
       <VGSTextInputBase
         {...rest}
         ref={ref}
         fieldName={fieldName}
         type={type}
+        accessibilityLabel={accessibilityLabel}
       />
     );
   }
