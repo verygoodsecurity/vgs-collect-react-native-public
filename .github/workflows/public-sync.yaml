@@ -17,13 +17,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
         with:
           ref: main
           fetch-depth: 0
           persist-credentials: false  # disable default token auth
 
-      - uses: actions/create-github-app-token@v2
+      - uses: actions/create-github-app-token@67018539274d69449ef7c02e8e71183d1719ab42 # v2
         id: app-token
         with:
           app-id: ${{ secrets.VGS_GITHUB_CI_BOT_APP_ID }}
