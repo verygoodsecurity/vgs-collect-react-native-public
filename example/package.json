@@ -20,9 +20,9 @@
     "@vgs/collect-react-native": "file:.."
   },
   "devDependencies": {
-    "@babel/core": "^7.28.4",
-    "@react-native/assets-registry": "^0.81.1",
-    "@types/jest": "^30.0.0"
+    "@babel/core": "7.28.5",
+    "@react-native/assets-registry": "0.81.5",
+    "@types/jest": "30.0.0"
   },
   "private": true
 }
