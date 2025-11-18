@@ -595,6 +595,21 @@ class VGSCollect {
   getFieldRules(fieldName: string): ValidationRule[] | undefined {
     return this.fields[fieldName]?.validationRules;
   }
+
+  /**
+   * Returns a comparison function for a specific field.
+   * This function can be used to check equality without exposing the raw field value.
+   * @internal Used by MatchFieldRule validator only
+   */
+  getFieldComparator(fieldName: string): (value: string) => boolean {
+    return (value: string) => {
+      const field = this.fields[fieldName];
+      if (!field) return false;
+      const otherValue = field.getSubmitValue();
+      if (typeof otherValue !== 'string') return false;
+      return value === otherValue;
+    };
+  }
   /**
    * Updates ALL fields of a specific type with new mask and validation rules.
    * Invokes the update callback for each field to notify the component.

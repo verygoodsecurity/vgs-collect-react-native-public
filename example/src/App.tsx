@@ -1,7 +1,6 @@
 // App.tsx
 import 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { createStackNavigator } from '@react-navigation/stack';
 
 import HomeScreen from './HomeScreen';
@@ -20,9 +19,14 @@ const Stack = createStackNavigator<RootStackParamList>();
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <NavigationContainer>
-        <Stack.Navigator initialRouteName="Home">
+    <NavigationContainer>
+        <Stack.Navigator 
+          initialRouteName="Home"
+          screenOptions={{
+            gestureEnabled: true,
+            headerShown: true,
+          }}
+        >
           <Stack.Screen
             name="Home"
             component={HomeScreen}
@@ -45,6 +49,5 @@ export default function App() {
           />
         </Stack.Navigator>
       </NavigationContainer>
-    </SafeAreaProvider>
   );
 }

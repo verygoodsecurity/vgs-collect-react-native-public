@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   StyleSheet,
+  SafeAreaView,
   View,
   Text,
   TouchableOpacity,
   ScrollView,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 /// Import VGSCollect SDK inputs
 import {
   VGSCollect,
@@ -24,8 +24,8 @@ if (process.env.NODE_ENV !== 'production') {
   VGSCollectLogger.getInstance().enable();
 }
 
-// Setupt your vaultId and environment
-const collector = new VGSCollect('vautlId', 'sandbox');
+// TODO: Replace 'vaultId' with your actual Vault ID.
+const collector = new VGSCollect('vaultId', 'sandbox');
 // Card Management API JWT token
 const token = '<your_token_here>'; // Replace with your actual access token https://docs.verygoodsecurity.com/card-management/authentication#id-2-generate-access-token
 
@@ -122,7 +122,7 @@ const CreateCard = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
+    <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <Text style={styles.title}>Add Card details:</Text>
         <VGSTextInput.CardNumber
