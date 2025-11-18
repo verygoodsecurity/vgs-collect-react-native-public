@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   StyleSheet,
+  SafeAreaView,
   View,
   Text,
   TouchableOpacity,
   ScrollView,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Import VGSCollect SDK inputs
 import {
@@ -126,7 +126,7 @@ const TokenizeData = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
+    <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <Text style={styles.title}>Add Card details:</Text>
         <VGSTextInput

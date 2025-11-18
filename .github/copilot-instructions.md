@@ -9,6 +9,7 @@ A cross-platform (iOS/Android) React Native SDK for secure collection, validatio
 - Collector core: `src/collector/VGSCollect.ts` manages field registry, validation, URL construction (vault / route / CNAME), submission, tokenization (`tokenize()`, `createAliases()`, `createCard()`), and analytics hooks.
 - Inputs layer: `src/components/` provides *base* (`VGSTextInputBase`) and *specialized wrappers* (`VGSCardInput`, `VGSCVCInput`, plus compound exports under `VGSTextInput.*`). Wrappers set defaults (e.g. `fieldName`, serializers) and forward refs.
 - Validation + masking: `src/utils/validators/*` (rule objects implementing a common `ValidationRule` interface). Dynamic brand-aware CVC rules updated via `VGSCollect.updateCvcFieldForBrand()`.
+ - Validation + masking: `src/utils/validators/*` (rule objects implementing a common `ValidationRule` interface). Dynamic brand-aware CVC rules updated via `VGSCollect.updateCvcFieldForBrand()`. For cross-field equality use `MatchFieldRule` (e.g. confirm email, confirm password);
 - Payment card brand logic: `src/utils/paymentCards/` (brand detection, length heuristics). Influences mask + rules update cascade.
 - Serializers: e.g. `ExpDateSeparateSerializer` splits expiration dates into `exp_month` / `exp_year` for tokenization.
 - Networking: Done via `fetch` inside `VGSCollect.submitDataToServer()`; custom headers: analytics + user-defined + JSON content type.
@@ -25,15 +26,22 @@ A cross-platform (iOS/Android) React Native SDK for secure collection, validatio
 - Do not leak raw sensitive values to logs. Logger only logs request payload because SDK runs in integrating app; keep it JSON-stringified and ensure no accidental console additions.
 - Always throw `VGSError` (with `VGSErrorCode`) for user-facing validation or configuration issues—never generic `Error`.
 - Keep public exports stable: see `src/index.tsx`. Add new exports deliberately and update TypeScript types.
-- Masks use placeholders: `#` digit, `@` letter, `a` lowercase, `A` uppercase, `*` alphanumeric.
+- Masks use placeholders: # (digit), @ (letter), a (lowercase), A (uppercase), * (alphanumeric).
 - Avoid introducing synchronous blocking network waits in analytics (they are intentionally fire-and-forget).
 
 ## Build & Tooling
+- Monorepo layout: this repository is a mono-repo containing the SDK source and an integration example. Core SDK source lives in `src/` at the repository root. The example consumer application lives in the `example/` directory. Built artifacts are emitted to `lib/{commonjs,module,typescript}` after build.
 - Build: `npm run prepare` (bob build) outputs to `lib/{commonjs,module,typescript}`.
 - Type check: `npm run typecheck`.
 - Lint: Flat config not used; legacy `eslintConfig` lives in `package.json`. If adding a new flat config file, consolidate rules. Run: `npm run lint`.
 - Tests: `npm test` (Jest). Ignore built `lib/` and example modules per `jest.modulePathIgnorePatterns`.
-- Example app: `cd example && npm install && npm run ios` (runs Expo flow). Keep changes backward-compatible with example usage.
+- Example app (Expo) workflow (preferred npx form for agents):
+	1. `cd example`
+	2. `npm install`
+	3. `npx expo start` (launch Metro + interactive dev tools)
+	4. `npx expo run:ios` or `npx expo run:android` (device/emulator build & run)
+	Scripts `npm run ios` / `npm run android` proxy to the same underlying Expo commands; use explicit `npx` invocation for clarity in automation.
+	Keep changes backward-compatible with example usage.
 - Release: `npm run release` (release-it + conventional changelog). Version bumps must sync with analytics constant `VGSCOLLECT_SDK_VERSION` in `AnalyticsClient.ts`.
 
 ## Security & Safety
@@ -70,3 +78,6 @@ A cross-platform (iOS/Android) React Native SDK for secure collection, validatio
 - Analytics: `src/utils/analytics/`
 
 Provide focused, minimal diffs. Ask if uncertain about public API or security-sensitive behavior before large refactors.
+
+Documentation & Example Code Note:
+- Use `AGENTS.md` strictly as internal context when updating customer-facing example app code snippets. Do NOT copy or expose agent-only operational guidance or security checklists directly into end-user documentation or README examples. Distill only the public API usage patterns demonstrated there.
