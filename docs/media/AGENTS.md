@@ -69,7 +69,7 @@ Mask placeholders:
 
 ---
 ## 4. Validation Rules (Public Surface)
-Available (import from validators export): `NotEmptyRule`, `LengthRule`, `LengthMatchRule`, `PatternRule`, `CardExpDateRule`, `PaymentCardRule`, `LuhnCheckRule`.
+Available (import from validators export): `NotEmptyRule`, `LengthRule`, `LengthMatchRule`, `PatternRule`, `CardExpDateRule`, `PaymentCardRule`, `LuhnCheckRule`, `MatchFieldRule`.
 
 Usage Example (custom name field rule set):
 ```tsx
@@ -94,6 +94,7 @@ Methods on `VGSCollect`:
 - `tokenize()`: Tokenizes fields configured with `tokenizationConfig`; returns `{ status, data }` where `data` is alias mapping.
 - `createAliases()`: Similar to `tokenize()` but uses newer Vault API version (`v2`). Keep alias ordering assumptions intact—never reorder collected data.
 - `createCard(token: string, extraData?: Record<string,string>)`: Requires JWT Access token; validates fields then posts to Card Management API, returns `{status, response}`.
+- `isFieldValueEqual(fieldName: string, value: string)`: Internal helper used by `MatchFieldRule` for secure cross-field comparison (no direct need to call in typical integrations).
 
 Tokenization Field Setup:
 Use `tokenizationConfig` prop inside component (if exposed) or future adapter logic: object implementing `{ storage, format }`. For expiration date with `ExpDateSeparateSerializer` you receive `exp_month` and `exp_year` pieces; mapping preserved automatically.
