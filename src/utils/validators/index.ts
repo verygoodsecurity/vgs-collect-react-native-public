@@ -7,3 +7,4 @@ export { PatternRule } from './PatternRule';
 export { CardExpDateRule } from './CardExpDateRule';
 export { DateRangeRule, VGSDate } from './DateRangeRule';
 export type { VGSDateFormatType } from './DateRangeRule';
+export { MatchFieldRule } from './MatchFieldRule';

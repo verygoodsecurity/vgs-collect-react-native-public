@@ -11,7 +11,8 @@ parameters:
 
 jobs:
   test:
-    executor: node/default
+    docker:
+      - image: cimg/node:20.19.4
     steps:
       - checkout
       - node/install-packages:

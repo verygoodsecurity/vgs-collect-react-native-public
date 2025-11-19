@@ -5,6 +5,7 @@ import React, {
   forwardRef,
 } from 'react';
 import { TextInput, View, StyleSheet } from 'react-native';
+import type { AccessibilityRole } from 'react-native';
 import VGSCollect from '../collector/VGSCollect';
 import { type ValidationRule } from '../utils/validators/Validator';
 import {
@@ -23,6 +24,12 @@ import {
 import { type VGSInputType, inputTypeDefaults } from './VGSInputType';
 import { DEFAULT_CARD_MASK_19 } from '../utils/paymentCards/PaymentCardBrand';
 import { type AutoCompleteType } from './types/AutoCompleteType';
+
+// Always provide a deterministic default placeholder color so that if a previous screen
+// set a custom placeholderTextColor and a recycled native view is reused (during Fast Refresh
+// or certain navigation optimizations), inputs without an explicit color don't inherit the
+// stale one. This approximates the platform default neutral gray.
+const DEFAULT_PLACEHOLDER_COLOR = '#9CA3AF';
 
 export interface VGSPredefinedInputProps
   extends Omit<VGSTextInputProps, 'fieldName' | 'type'> {
@@ -72,6 +79,10 @@ export interface VGSTextInputProps {
    */
   placeholder?: string;
   /**
+   * Color of the placeholder text. If not provided, React Native default is used.
+   */
+  placeholderTextColor?: string;
+  /**
    * The keyboard type for the input field (e.g., 'numeric', 'email-address').
    */
   keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad';
@@ -110,6 +121,22 @@ export interface VGSTextInputProps {
    * Note: The `importantForAutofill` attribute is only available on Android API level 26 and above.
    */
   importantForAutofill?: 'auto' | 'no' | 'noExcludeDescendants' | 'yes' | 'yesExcludeDescendants';
+   /**
+    * Whether this input is accessible. Defaults to true.
+    */
+   accessible?: boolean;
+   /**
+    * Accessibility label describing the purpose of the field (will never include sensitive value).
+    */
+   accessibilityLabel?: string;
+   /**
+    * Optional accessibility hint providing extra guidance.
+    */
+   accessibilityHint?: string;
+   /**
+    * Optional override for accessibility role. Defaults to 'text'.
+    */
+  accessibilityRole?: AccessibilityRole;
 }
 
 /** Ref methods for VGSTextInput component */
@@ -128,6 +155,7 @@ export const VGSTextInputBase = forwardRef<VGSTextInputRef, VGSTextInputProps>((
     type = 'text', // default field type if not provided
     onStateChange,
     placeholder,
+    placeholderTextColor,
     divider,
     secureTextEntry = false,
     autoCorrect = false,
@@ -135,6 +163,10 @@ export const VGSTextInputBase = forwardRef<VGSTextInputRef, VGSTextInputProps>((
     tokenization = false,
     textStyle: inputTextStyle,
     testID,
+    accessible = true,
+    accessibilityLabel,
+    accessibilityHint,
+    accessibilityRole = 'text',
   } = props;
 
   // Get defaults for the specified type
@@ -338,6 +370,9 @@ export const VGSTextInputBase = forwardRef<VGSTextInputRef, VGSTextInputProps>((
         onFocus={handleFocus}
         onBlur={handleBlur}
         placeholder={placeholder}
+        // Always provide a concrete placeholderTextColor to prevent native view
+        // from keeping a previous instance's color when this prop is omitted.
+        placeholderTextColor={placeholderTextColor ?? DEFAULT_PLACEHOLDER_COLOR}
         keyboardType={keyboardType}
         secureTextEntry={secureTextEntry}
         autoCorrect={autoCorrect}
@@ -345,6 +380,11 @@ export const VGSTextInputBase = forwardRef<VGSTextInputRef, VGSTextInputProps>((
         ref={textInputRef}
         testID={testID}
         underlineColorAndroid="transparent"
+         accessible={accessible}
+         accessibilityLabel={accessibilityLabel}
+         accessibilityHint={accessibilityHint}
+         accessibilityRole={accessibilityRole}
+         accessibilityState={{ disabled: false, selected: state.isFocused, busy: state.validationErrors.length > 0 && state.isDirty }}
       />
     </View>
   );

@@ -26,8 +26,8 @@ if (process.env.NODE_ENV !== 'production') {
   VGSCollectLogger.getInstance().enable();
 }
 
-// Setup your vaultId and environment
-const collector = new VGSCollect('vautlId', 'sandbox');
+// TODO: Replace 'vaultId' with your actual Vault ID.
+const collector = new VGSCollect('vaultId', 'sandbox');
 
 const CollectCardData = () => {
   const [formFieldsState, setFormFieldsState] = useState<{
@@ -130,7 +130,6 @@ const CollectCardData = () => {
           type="cardHolderName"
           placeholder="Card Holder Name"
           autoComplete='cc-name'
-          importantForAutofill='yes'
           onStateChange={(state: any) =>
             handleFieldStateChange('card_holder', state)
           }
@@ -154,8 +153,8 @@ const CollectCardData = () => {
           fieldName="card_number"
           iconPosition="right"
           placeholder="4111 1111 1111 1111"
+          placeholderTextColor='red'
           autoComplete='cc-number'
-          importantForAutofill='yes'
           onStateChange={(state: any) =>
             handleFieldStateChange('card_number', state)
           }
@@ -291,7 +290,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 40,
+    paddingTop: 16,
   },
   title: {
     fontSize: 20,

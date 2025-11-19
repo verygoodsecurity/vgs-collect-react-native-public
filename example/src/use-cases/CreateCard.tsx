@@ -24,8 +24,8 @@ if (process.env.NODE_ENV !== 'production') {
   VGSCollectLogger.getInstance().enable();
 }
 
-// Setupt your vaultId and environment
-const collector = new VGSCollect('vautlId', 'sandbox');
+// TODO: Replace 'vaultId' with your actual Vault ID.
+const collector = new VGSCollect('vaultId', 'sandbox');
 // Card Management API JWT token
 const token = '<your_token_here>'; // Replace with your actual access token https://docs.verygoodsecurity.com/card-management/authentication#id-2-generate-access-token
 
@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 40,
+    paddingTop: 16,
   },
   title: {
     fontSize: 20,

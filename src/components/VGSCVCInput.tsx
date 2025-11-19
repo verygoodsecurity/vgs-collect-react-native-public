@@ -66,6 +66,7 @@ const VGSCVCInput = forwardRef<VGSTextInputRef, VGSCVCInputProps>((
     textStyle: textStyle,
     iconStyle,
     containerHeight = 50,
+    accessibilityLabel = 'Card security code',
     ...otherProps
   }, ref
 ) => {
@@ -89,6 +90,7 @@ const VGSCVCInput = forwardRef<VGSTextInputRef, VGSCVCInputProps>((
         ref={ref}
         secureTextEntry={secureTextEntry}
         onStateChange={handleStateChange}
+        accessibilityLabel={accessibilityLabel}
         textStyle={[
           {
             paddingLeft: iconPosition === 'left' ? iconWidth + iconPadding : 0,

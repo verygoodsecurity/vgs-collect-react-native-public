@@ -19,6 +19,7 @@
 - [Introduction](#introduction)
 - [Features](#features)
 - [Installation](#installation)
+- [AI Agent Integration](#ai-agent-integration)
 - [Prerequisites](#prerequisites)
 - [Quick Start](#quick-start)
   - [UI Inputs](#ui-inputs)
@@ -54,14 +55,46 @@ npm install @vgs/collect-react-native
 # Using yarn
 yarn add @vgs/collect-react-native
 ```
-Ensure you have React Native set up in your project. If not, follow the React Native Getting Started guide.
+Ensure you have React Native set up in your project. If not, follow the official React Native "Getting Started" guide.
+
+## AI Agent Integration
+
+Use [`AGENTS.md`](./AGENTS.md) as the single authoritative context for autonomous coding agents integrating or maintaining this React Native SDK. It lists public APIs, security constraints, validation rules, upgrade & testing expectations.
+
+Minimal System Prompt Example:
+```text
+You are an autonomous engineering agent integrating the VGS Collect React Native SDK into an existing app.
+Use the full contents of AGENTS.md as the authoritative policy.
+Constraints:
+- Only public exports from package root (no internal imports).
+- No raw sensitive data (PAN, CVC, SSN, exp date) in logs or tests.
+- Validate all registered fields before submission or tokenization.
+- Never persist raw field values; only use provided state booleans/metadata.
+Goals:
+1. Add a secure card form (card number, name, exp, cvc) with redacted logging (brand + last4 only when valid).
+2. Implement a flow that submits data to the sandbox vault and returns aliases.
+3. Provide Jest tests for valid/invalid card number and past expiration edge case.
+Return: Modified source files only. Do not commit secrets.
+```
+
+Developer Prompt (Inline Example for a Single Task):
+```text
+Task: Add custom tokenization to include exp date split into month/year using ExpDateSeparateSerializer.
+Follow AGENTS.md sections on tokenization & serializers.
+Do not alter existing public API; add tests asserting alias keys exp_month & exp_year are returned.
+```
+
+When updating prompts for agents:
+- Always reference `AGENTS.md` explicitly (do not duplicate entire content inline).
+- Keep constraints explicit (public API, no sensitive logs, validation required).
+- Include concrete acceptance criteria (e.g., which tests must pass, which fields to add).
 
 ## Prerequisites
-You should have your organization registered at <a href="https://dashboard.verygoodsecurity.com/dashboard/" target="_blank">VGS Dashboard</a>. A Sandbox Vault will be
-pre-created for you. Use your <a href="https://dashboard.verygoodsecurity.com/dashboard/" target="_blank">VGS Dashboard</a>  to start collecting data. If you don’t have an organization registered yet, check the [Quick Integration](getting-started/quick-integration) guides. Use your `<vaultId>` to start collecting data.
+You should have your organization registered at the <a href="https://dashboard.verygoodsecurity.com/dashboard/" target="_blank">VGS Dashboard</a>. A Sandbox vault is
+pre-created for you. Use the Dashboard to configure routes and begin collecting data. If you don’t have an organization yet, see the Quick Integration guides. Use your `<vaultId>` to start collecting data.
 
 ## Example app
-You can check our example application [here](./example/src/App.tsx). To run example Application, follow next steps:
+You can check our example application [here](./example/src/App.tsx). To run the example application, follow these steps:
 ``` bash
 # 1. Download SDK repository
 # 2. In root folder run:
@@ -134,7 +167,7 @@ const handleSubmit = async () => {
   }
 };
 ```
-**NOTE**: for each input you should set 'fieldName' attribute, that should be same as in you **Vault** Route settings. This identifier is required for Redact/Reveal operations on Inbound/Outbound Routes.
+**NOTE**: Each input must set a `fieldName` that exactly matches the field key configured in your Vault Route settings. This identifier is required for redact/reveal operations on inbound/outbound routes.
 
 ## UI Inputs
 
@@ -184,7 +217,7 @@ Here's how to use the mask prop:
 
 VGS Input components allow you to re-define default or add custom validation rules to ensure that the input data meets certain criteria. You can use the validationRules prop to pass an array of ValidationRule objects.
 
-Here's a list of the available validation rules available:
+Here's a list of the available validation rules:
 
 -  `NotEmptyRule`: Checks if the input is not empty.
 -  `LengthRule`: Validates the input length against a minimum and maximum length.
@@ -208,11 +241,11 @@ import { NotEmptyRule, LengthRule, PatternRule } from '@vgs/collect-react-native
 />
 ```
 ## iOS Privacy Manifest
-VGS Collect React Native SDK **does not directly package or embed** the Privacy Manifest file into your iOS project. Instead, you should manually copy and update Privacy Manifest info from the VGS [Privacy Manifest file](https://github.com/verygoodsecurity/vgs-collect-react-native-public/blob/main/PrivacyInfo.xcprivacy). Follow the instructions from our [docs](https://www.verygoodsecurity.com/docs/vgs-collect/rn-sdk/privacy-details).
+The SDK **does not directly package or embed** the Privacy Manifest file into your iOS project. Instead, manually copy and update the privacy information from the VGS <a href="https://github.com/verygoodsecurity/vgs-collect-react-native-public/blob/main/PrivacyInfo.xcprivacy">Privacy Manifest file</a>. Follow the instructions in our <a href="https://www.verygoodsecurity.com/docs/vgs-collect/rn-sdk/privacy-details">documentation</a>.
 
 
 ### Privacy
-The SDK tracks a few key metrics to understand SDK's features usage, which helps us know what areas need improvement. No personal information is tracked.
+The SDK tracks a few key metrics about feature usage to guide improvements. No personal or raw sensitive data is tracked.
 
 You can opt-out of metrics collection via `VGSAnalyticsClient`:
 ```
@@ -223,8 +256,8 @@ VGSAnalyticsClient.getInstance().shouldCollectAnalytics = false
 -  SDK Documentation: https://www.verygoodsecurity.com/docs/vgs-collect/rn-sdk
 
 ### Releases
-To follow `@vgs/collect-react-native` updates and changes check the [releases](https://github.com/verygoodsecurity/vgs-collect-react-native-public/releases) page.
+To follow `@vgs/collect-react-native` updates and changes, check the <a href="https://github.com/verygoodsecurity/vgs-collect-react-native-public/releases">releases page</a>.
 
 ## License
 
-VGS Collect React Native SDK is released under the MIT license. [See LICENSE](https://github.com/verygoodsecurity/vgs-collect-react-native-public/blob/main/LICENSE) for details.
+The VGS Collect React Native SDK is released under the MIT license. See <a href="https://github.com/verygoodsecurity/vgs-collect-react-native-public/blob/main/LICENSE">LICENSE</a> for details.
