@@ -5,8 +5,8 @@
       "groupName": "react-native monorepo",
       "matchPackageNames": [
         "/^react-native/",
-        "/^@react-native//",
-        "/^@react-native-community//"
+        "/^@react-native/",
+        "/^@react-native-community/"
       ]
     }
   ]
