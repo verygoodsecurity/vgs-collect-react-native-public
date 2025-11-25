@@ -3,10 +3,10 @@
   "packageRules": [
     {
       "groupName": "react-native monorepo",
-      "matchPackagePatterns": [
-        "^react-native",
-        "^@react-native/",
-        "^@react-native-community/"
+      "matchPackageNames": [
+        "/^react-native/",
+        "/^@react-native//",
+        "/^@react-native-community//"
       ]
     }
   ]
