@@ -69,7 +69,7 @@ Mask placeholders:
 
 ---
 ## 4. Validation Rules (Public Surface)
-Available (import from validators export): `NotEmptyRule`, `LengthRule`, `LengthMatchRule`, `PatternRule`, `CardExpDateRule`, `PaymentCardRule`, `LuhnCheckRule`, `MatchFieldRule`.
+Available (import from validators export): `NotEmptyRule`, `LengthRule`, `LengthMatchRule`, `PatternRule`, `CardExpDateRule`, `PaymentCardRule`, `LuhnCheckRule`, `MatchFieldRule`, `ABARoutingNumberRule`.
 
 Usage Example (custom name field rule set):
 ```tsx

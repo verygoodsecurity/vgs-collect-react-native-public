@@ -80,4 +80,6 @@ A cross-platform (iOS/Android) React Native SDK for secure collection, validatio
 Provide focused, minimal diffs. Ask if uncertain about public API or security-sensitive behavior before large refactors.
 
 Documentation & Example Code Note:
-- Use `AGENTS.md` strictly as internal context when updating customer-facing example app code snippets. Do NOT copy or expose agent-only operational guidance or security checklists directly into end-user documentation or README examples. Distill only the public API usage patterns demonstrated there.
+- Do NOT use `AGENTS.md` as context when changing SDK source code under `src/`.
+- ALWAYS use `AGENTS.md` as context when updating the example app under `example/` to ensure public usage patterns remain consistent. Do NOT copy agent-only guidance into end-user docs.
+- When creating or modifying any public-facing feature (new exports, validators, components, types, etc.), ALWAYS update `AGENTS.md` in the same PR to reflect the change and keep instructions consistent in style and formatting.
