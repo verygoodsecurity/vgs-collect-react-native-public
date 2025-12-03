@@ -18,7 +18,7 @@ import {
   getTypeAnalyticsString,
   type VGSInputType,
 } from '../components/VGSInputType';
-import { getVaultAPIPath, ValutAPIVersion } from './ValutAPI';
+import { getVaultAPIPath, VaultAPIVersion } from './VaultAPI';
 
 type FieldUpdateCallback = (config: {
   mask?: string;
@@ -41,8 +41,16 @@ interface FieldConfig {
   tokenizationConfig?: VGSTokenizationConfiguration;
   updateCallback?: FieldUpdateCallback;
 }
-/** Main class for managing data collection, validation, and submission to VGS.
- * It handles field registration, CNAME validation, data submission, and tokenization.
+/**
+ * VGSCollect
+ *
+ * Public orchestrator for secure collection and submission/tokenization of sensitive input data.
+ * Responsibilities:
+ * - Field lifecycle: register/unregister, type-specific updates, brand-aware CVC adjustments.
+ * - Validation: invokes per-field `getValidationErrors()` and throws `VGSError` on failures.
+ * - Networking: builds vault or API URLs and performs `fetch` with analytics + custom headers.
+ * - Tokenization: collects configured fields and maps aliases back to original field keys.
+ * - CNAME: optional custom hostname validation gated before any submission.
  */
 class VGSCollect {
   private tenantId: string;
@@ -58,10 +66,11 @@ class VGSCollect {
   private formAnalyticsDetails: FormAnalyticsDetails;
 
   /**
-   * Creates a new VGSCollect instance with Vault Id.
+   * Creates a new collector bound to a Vault.
    *
-   * @param id - The VGS Vault ID.
-   * @param environment - The environment (sandbox, live, live-[region]).
+   * @param id - Vault ID, alphanumeric (e.g., `tnt12345`).
+   * @param environment - Deployment environment: `sandbox`, `live`, or `live-<region>`.
+   * @throws {VGSError} When configuration is invalid (tenant or environment).
    */
   public constructor(id: string, environment: string = 'sandbox') {
     this.validateConfig(id, environment);
@@ -71,11 +80,11 @@ class VGSCollect {
   }
    
   /**
-   * Sets the route ID for the VGSCollect instance.
+   * Sets the Vault Route ID to shape the base hostname.
+   * Host becomes `<tenantId>-<routeId>.<environment>.verygoodproxy.com`.
    *
-   * @param routeId - The vault route ID to set.
-   * @returns The VGSCollect instance for chaining.
-   * @throws {Error} If the route ID is not a string.
+   * @param routeId - Route identifier configured in Vault.
+   * @throws {VGSError} If `routeId` is invalid.
    */
   public setRouteId(routeId: string) {
     this.validateRouteId(routeId);
@@ -83,19 +92,20 @@ class VGSCollect {
   }
 
   /**
-   * Sets custom headers for the VGSCollect instance.
+   * Adds custom HTTP headers to subsequent requests.
    *
-   * @param headers - An object containing the custom headers.
+   * @param headers - Key/value header pairs. Avoid including sensitive values.
    */
   public setCustomHeaders(headers: Record<string, string>) {
     this.customHeaders = headers;
   }
 
   /**
-   * Sets the CNAME for the VGSCollect instance.
+   * Sets and validates a custom CNAME hostname.
+   * Submission is gated until validation completes.
    *
-   * @param cname - The CNAME to set.
-   * @returns A Promise that resolves when the CNAME validation is complete.
+   * @param cname - Custom hostname pointing to VGS (e.g., `payments.example.com`).
+   * @returns Promise that resolves once validation finishes.
    */
   public async setCname(cname: string): Promise<void> {
     if (this.isCnameValidating) {
@@ -133,14 +143,16 @@ class VGSCollect {
     await this.cnameValidationPromise;
   }
   /**
-   * Registers a field with the VGSCollect instance.
+   * Registers a field with the collector.
+   * Typically invoked by SDK input components on mount.
    *
-   * @param fieldName - The uniq name of the field.
-   * @param getSubmitValue - A function that returns the current value of the field.
-   * @param getValidationErrors - A function that returns an array of validation errors for the field.
-   * @param type - The type of the field.
-   * @param validationRules - An array of validation rules for the field (optional).
-   * @param updateCallback - A callback function that is invoked when the field's configuration is updated (optional).
+   * @param fieldName - Unique field key matching Vault Route mapping (e.g., `pan`, `cvc`).
+   * @param getSubmitValue - Getter returning raw value or a serialized object (e.g., `{ month, year }`).
+   * @param getValidationErrors - Getter returning validation messages; empty when valid.
+   * @param tokenizationConfig - Optional config enabling tokenization for this field.
+   * @param type - Field type string (e.g., `card`, `cvc`, `expDate`).
+   * @param validationRules - Optional override rules; if provided, defaults are replaced.
+   * @param updateCallback - Optional notifier invoked when mask/rules change (e.g., brand updates).
    */
   registerField(
     fieldName: string,
@@ -167,20 +179,25 @@ class VGSCollect {
     );
   }
   /**
-   * Unregisters a field from the VGSCollect instance.
+   * Unregisters a previously registered field.
+   * Call on component unmount to prevent stale references.
    *
-   * @param fieldName - The name of the field to unregister.
+   * @param fieldName - Field key to remove.
    */
   public unregisterField(fieldName: string): void {
     delete this.fields[fieldName];
   }
 
   /**
-   * @param {string} path - The API endpoint path.
-   * @param {string} method - The HTTP method (default is POST).
-   * @param {Record<string, any>} extraData - Additional data to send.
-   * @param {Record<string, any>} customRequestStructure - JSON pattern, applies a custom structure template to the collected sensitive data.
-   * @returns {Promise<any>} - A Promise that resolves with the server response, or rejects with a validation error.
+   * Submits collected data to the Vault upstream.
+   * Validates fields, awaits CNAME validation, builds URL, then performs `fetch`.
+   *
+   * @param path - API path under the Vault host (e.g., `/post`).
+   * @param method - HTTP method, default `POST`.
+   * @param extraData - Additional non-sensitive payload to merge.
+   * @param customRequestStructure - Optional template object with `{{ fieldName }}` placeholders.
+   * @returns Promise resolving `{ status, response }` (native Fetch Response).
+   * @throws {VGSError} When input data invalid or URL configuration fails.
    */
   public async submit(
     path: string = '',
@@ -222,7 +239,7 @@ class VGSCollect {
   }> {
     try {
       return await this._handleTokenization(
-        ValutAPIVersion.v2,
+        VaultAPIVersion.v2,
         this.collectFieldTokenizationData.bind(this)
       );
     } catch (error) {
@@ -242,10 +259,13 @@ class VGSCollect {
   }
 
   /**
-   *  Creates a new card in the Card Management API(https://www.verygoodsecurity.com/docs/api/card-management#tag/card-management/POST/cards).
-   * @returns {Promise<{ status: number; response: any }>} - A Promise that resolves with the server response.
-   * @throws {VGSError} - If validation fails or if the request is not successful.
-   * @requires **token** - A JWT Access token for Card Management API.
+   * Creates a card via Card Management API.
+   * Validates `token` and input fields, sets required headers, then POSTs to CMP.
+   *
+   * @param token - JWT Access token (`Authorization: Bearer <token>`).
+   * @param extraData - Optional additional payload merged with `{ data: { attributes } }`.
+   * @returns Promise resolving `{ status, response }` (native Fetch Response).
+   * @throws {VGSError} If access token invalid or inputs fail validation.
    */
   public async createCard(token: string, extraData: Record<string, string> = {}): Promise<{ status: number; response: any }> {
     // will throw VGSError if validation fails
@@ -265,13 +285,19 @@ class VGSCollect {
     return this.submitDataToServer(url, 'POST', submitData, { upstream: 'cmp' });
   }
 
+  /**
+   * Tokenizes fields configured with `tokenizationConfig` using Vault API v1.
+   * Returns an alias map keyed by original field names (and serializer sub-keys).
+   *
+   * @returns Promise resolving `{ status, data }`, where `data` is alias mapping.
+   */
   public async tokenize(): Promise<{
     status: number;
     data: Record<string, string> | any;
   }> {
     try {
       return await this._handleTokenization(
-        ValutAPIVersion.v1,
+        VaultAPIVersion.v1,
         this.collectFieldTokenizationData.bind(this)
       );
     } catch (error) {
@@ -280,7 +306,7 @@ class VGSCollect {
   }
 
   private async _handleTokenization(
-    apiVersion: ValutAPIVersion,
+    apiVersion: VaultAPIVersion,
     collectedDataFetcher: () => Promise<{
       collectedData: any[];
       fieldMappings: TokenizationFieldMapping[];
@@ -310,7 +336,7 @@ class VGSCollect {
     }
 
     const upstreamData =
-      apiVersion === ValutAPIVersion.v1 ? 'tokenization' : 'vaultApi';
+      apiVersion === VaultAPIVersion.v1 ? 'tokenization' : 'vaultApi';
     const { status, response } = await this.submitDataToServer(
       url,
       'POST',
@@ -442,7 +468,8 @@ class VGSCollect {
   }
 
   /**
-   *  Validates the form fields using the getValidationErrors() method.
+   * Validates all registered fields via `getValidationErrors()`.
+   * Throws `VGSError` with `VGSErrorCode.InputDataIsNotValid` when any field has errors.
    */
   private validateFields() {
     const errors: Record<string, string[]> = {};
@@ -477,7 +504,8 @@ class VGSCollect {
   }
 
   /**
-   *  Validates the cmp access token.
+   * Validates the Card Management access token.
+   * Throws `VGSError` with `VGSErrorCode.IvalidAccessToken` if empty.
    */
   private validateAccessToken(token: string) {
     if (token.length > 0) {
@@ -501,12 +529,14 @@ class VGSCollect {
   }
 
   /**
-   *  Submits data to the server using fetch.
-   * @param {string} url - The URL to send the request to.
-   * @param {string} method - The HTTP method (default is POST).
-   * @param {Record<string, any>} data - The data to send.
-   * @returns {Promise<{ status: number; response: any }>} - A Promise that resolves with the server response.
-   * @throws {Error} - An error if the request is not successful.
+   * Performs the HTTP request using `fetch` and tracks analytics.
+   *
+   * @param url - Absolute destination URL.
+   * @param method - HTTP method.
+   * @param data - JSON payload to send.
+   * @param analyticsData - Optional context for analytics (e.g., upstream type).
+   * @returns Promise resolving `{ status, response }`.
+   * @throws Propagates network errors after analytics tracking.
    */
   private async submitDataToServer(
     url: string,
@@ -597,9 +627,12 @@ class VGSCollect {
   }
 
   /**
-   * Returns a comparison function for a specific field.
-   * This function can be used to check equality without exposing the raw field value.
-   * @internal Used by MatchFieldRule validator only
+   * Returns a comparator function for a specific field.
+   * Allows secure equality checks without exposing raw values.
+   * Intended for `MatchFieldRule` use.
+   *
+   * @param fieldName - Field to compare against.
+   * @returns Function accepting a value and returning boolean equality.
    */
   getFieldComparator(fieldName: string): (value: string) => boolean {
     return (value: string) => {
@@ -611,8 +644,11 @@ class VGSCollect {
     };
   }
   /**
-   * Updates ALL fields of a specific type with new mask and validation rules.
-   * Invokes the update callback for each field to notify the component.
+   * Bulk-updates all fields of a given `type` with new mask/rules.
+   * Triggers each field's `updateCallback` for UI synchronization.
+   *
+   * @param type - Field type string (e.g., `cvc`).
+   * @param config - New mask and/or validation rules to apply.
    */
   updateFieldByType(
     type: string,
@@ -631,8 +667,10 @@ class VGSCollect {
     }
   }
   /**
-   * Updates ALL fields of type "cvc" with suitable mask and validation rules
-   * whenever the card brand changes. Computes min/max from brand.cvcLengths.
+   * Adjusts all `cvc` fields when card brand changes.
+   * Uses brand-specific CVC lengths to set mask and validation rules.
+   *
+   * @param brandName - Detected payment card brand name.
    */
   updateCvcFieldForBrand(brandName: string) {
     const manager = PaymentCardBrandsManager.getInstance();
@@ -661,7 +699,10 @@ class VGSCollect {
   }
 
   /**
-   * A simple helper to find the first field name whose type matches `inputType`.
+   * Finds the first registered field name for the given `type`.
+   *
+   * @param inputType - Field type to search for.
+   * @returns Matching field name or `undefined`.
    */
   findFieldNameByType(inputType: string): string | undefined {
     return Object.keys(this.fields).find(

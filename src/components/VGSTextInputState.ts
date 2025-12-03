@@ -9,8 +9,9 @@ type SsnState = { type: 'ssn'; last4?: string };
 type DefaultState = { type: VGSInputType };
 type ExtraState = CardState | SsnState | DefaultState;
 
-/** State object for VGSTextInput component
- * Includes properties for validation, focus, and input status.
+/**
+ * State emitted by `VGSTextInput` components.
+ * Captures validation, focus, and input metadata.
  */
 export type VGSTextInputState = ExtraState & {
   isValid: boolean;

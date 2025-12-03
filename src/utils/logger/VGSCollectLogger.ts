@@ -27,9 +27,12 @@ export interface VGSLogEvent {
   severity: VGSLogSeverity;
 }
 
-/** Singleton Logger class for VGSCollect SDK.
- * It provides methods to enable/disable logging and log events, requests, and responses.
- * Logging MUST BE DISABLED in production builds!
+/**
+ * VGSCollectLogger
+ *
+ * Singleton logger for the SDK.
+ * Provides methods to enable/disable logging and log events, requests, and responses.
+ * Logging is automatically prevented from enabling in production builds.
  */
 class VGCollectLogger {
   private static instance: VGCollectLogger;
@@ -41,9 +44,7 @@ class VGCollectLogger {
   private constructor() {}
 
   /**
-   * Get the singleton instance of VGSLogger.
-   *
-   * @returns {VGSLogger} The VGSLogger instance.
+   * Returns the singleton logger instance.
    */
   public static getInstance(): VGCollectLogger {
     if (!VGCollectLogger.instance) {
@@ -53,7 +54,7 @@ class VGCollectLogger {
   }
 
   /**
-   * Enable logging.
+   * Enables logging (no-op in production).
    */
   public enable(): void {
     // Prevent enabling logs in production
@@ -64,16 +65,16 @@ class VGCollectLogger {
   }
 
   /**
-   * Disable logging.
+   * Disables logging.
    */
   public disable(): void {
     this.isEnabled = false;
   }
 
   /**
-   * Log an event.
+   * Logs an event.
    *
-   * @param {VGSLogEvent} event - The log event.
+   * @param event - Event with level, severity, and text.
    */
   log(event: VGSLogEvent): void {
     const { logLevel, text, severity } = event;
@@ -94,6 +95,7 @@ class VGCollectLogger {
     headers: Record<string, any>,
     payload: Record<string, any>
   ) {
+    // Safe logging; payload should not contain raw sensitive values.
     if (!this.isEnabled) {
       return;
     }
@@ -105,6 +107,11 @@ class VGCollectLogger {
     console.log('------------------------------------');
   }
 
+  /**
+   * Logs a `fetch` response including status, headers and JSON body.
+   *
+   * @param response - Fetch Response object.
+   */
   async logResponse(response: any): Promise<void> {
     if (!this.isEnabled) {
       return;
@@ -126,6 +133,9 @@ class VGCollectLogger {
     console.log('------------------------------------');
   }
 
+  /**
+   * Logs tokenization response with the resulting alias map.
+   */
   logTokenizationResponse(response: any, result: Record<string, string>) {
     if (!this.isEnabled) {
       return;
@@ -136,6 +146,9 @@ class VGCollectLogger {
     console.log(result);
   }
 
+  /**
+   * Logs base response data (URL and status) with validation.
+   */
   private logBaseResponseData(response: any) {
     if (!(response instanceof Response)) {
       this.log({
@@ -150,6 +163,9 @@ class VGCollectLogger {
     console.log(`${statusString}  response code: ${response.status}`);
   }
 
+  /**
+   * Returns a status prefix for success/failure.
+   */
   private baseStatusString(ok: Boolean): string {
     return ok ? '✅ Success ⬇️ VGSCollectSDK' : '❗ Failed ⬇️ VGSCollectSDK';
   }
@@ -160,6 +176,7 @@ class VGCollectLogger {
     headers: Record<string, any> = {},
     payload: Record<string, any> = {}
   ) {
+    // Safe logging; payload should not contain raw sensitive values.
     if (!this.isEnabled) {
       return;
     }

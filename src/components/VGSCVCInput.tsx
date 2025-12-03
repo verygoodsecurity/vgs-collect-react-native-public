@@ -1,4 +1,3 @@
-/* eslint-disable react-native/no-inline-styles */
 // VGSCVCInput.tsx
 import { useState, forwardRef } from 'react';
 import { View, Image, StyleSheet } from 'react-native';
@@ -9,7 +8,8 @@ import type { VGSTextInputState } from './VGSTextInputState';
 const CVCImage = require('../assets/cardIcons/cvc3-light.png');
 
 /**
- * Props for the VGSCVCInput component.
+ * Props for the `VGSCVCInput` component.
+ * Extends `VGSTextInputProps` but fixes `type` to `cvc`.
  */
 export interface VGSCVCInputProps extends Omit<VGSTextInputProps, 'type'> {
   /**
@@ -51,8 +51,12 @@ export interface VGSCVCInputProps extends Omit<VGSTextInputProps, 'type'> {
   iconStyle?: object;
 }
 /**
- * A Secute component for inputting CVC/CVV codes with a pre-defefined config such as type, validation rules, mask.
- * It displays an image of the CVC code location on the card.
+ * Secure input for card security codes (CVC/CVV).
+ *
+ * Behavior:
+ * - Sets `type="cvc"`, applies numeric mask and length validators.
+ * - Displays a contextual CVC illustration icon.
+ * - Supports `secureTextEntry` for privacy.
  */
 const VGSCVCInput = forwardRef<VGSTextInputRef, VGSCVCInputProps>((
   {

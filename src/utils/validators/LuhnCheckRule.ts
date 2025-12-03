@@ -1,7 +1,19 @@
 import { ValidationRule } from './Validator';
 
-// Luhn check validation rule
+/**
+ * LuhnCheckRule
+ *
+ * Validates input using the Luhn checksum algorithm (mod 10).
+ * Commonly used for payment card numbers.
+ */
 export class LuhnCheckRule extends ValidationRule {
+  /**
+   * Checks whether `input` passes the Luhn algorithm.
+   * Non-numeric inputs are rejected.
+   *
+   * @param input - String to validate (spaces/dashes tolerated).
+   * @returns `true` if valid, `false` otherwise.
+   */
   validate(input: string): boolean {
     const num = input.replace(/\s+|-/g, ''); // Remove spaces and dashes
 
@@ -13,7 +25,7 @@ export class LuhnCheckRule extends ValidationRule {
   }
 }
 
-// Helper function for Luhn validation
+/** Helper function for Luhn validation. */
 const luhnCheck = (num: string): boolean => {
   var digit, digits, i, len, odd, sum;
   odd = true;

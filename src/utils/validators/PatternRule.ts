@@ -1,15 +1,18 @@
 import { ValidationRule } from './Validator';
 
 /**
- * A validation rule that checks if the input string
- * matches the specified pattern (regex).
+ * PatternRule
+ *
+ * Validates that the input matches a provided regular expression pattern.
  */
 export class PatternRule extends ValidationRule {
   private pattern: string;
 
   /**
-   * @param pattern - The regex pattern to validate against.
-   * @param errorMessage - String to display on validation failure.
+   * Creates a regex-based validation rule.
+   *
+   * @param pattern - Regex pattern string to validate against.
+   * @param errorMessage - Message returned when validation fails.
    */
   constructor(pattern: string, errorMessage: string) {
     super(errorMessage);
@@ -17,10 +20,10 @@ export class PatternRule extends ValidationRule {
   }
 
   /**
-   * Validate that the input matches the provided regex pattern.
+   * Checks whether `input` matches the configured regex pattern.
    *
-   * @param input - The string to validate
-   * @returns true if valid, false otherwise
+   * @param input - String to validate.
+   * @returns `true` if valid, `false` otherwise.
    */
   validate(input: string): boolean {
     // Edge case: handle undefined or null as invalid

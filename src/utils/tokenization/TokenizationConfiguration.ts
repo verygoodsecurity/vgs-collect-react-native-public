@@ -1,6 +1,7 @@
 import type { VGSInputType } from '../../components/VGSInputType';
 /**
- * Tokenization configuration for a field. The object can contain `storage` and `format` properties.
+ * Tokenization configuration for a field.
+ * Provides `storage` policy and alias `format`.
  */
 export interface VGSTokenizationConfiguration {
   storage?: VGSVaultStorageType; // Add vault storage type
@@ -32,6 +33,14 @@ export enum VGSVaultAliasFormat {
   ALPHANUMERIC_LENGTH_PRESERVING_SIX_T_FOUR = 'ALPHANUMERIC_LENGTH_PRESERVING_SIX_T_FOUR',
 }
 
+/**
+ * Validates tokenization config per input `type`.
+ * Ensures `cvc` uses VOLATILE and `card` uses PERSISTENT storage policies.
+ *
+ * @param value - `false` to disable or a config object.
+ * @param inputType - Field type to validate against.
+ * @returns Original config when valid, or `false` when invalid.
+ */
 export function tokenizationConfigValidation(
   value: false | VGSTokenizationConfiguration,
   inputType: VGSInputType

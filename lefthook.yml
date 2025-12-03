@@ -2,13 +2,17 @@ pre-commit:
   parallel: true
   commands:
     lint:
-      glob: "*.{js,ts,jsx,tsx}"
-      run: npx eslint {staged_files}
+      run: |
+        NODE_BIN="$(command -v node || echo /opt/homebrew/bin/node)" && \
+        "$NODE_BIN" ./node_modules/eslint/bin/eslint.js src --ext .ts,.tsx --max-warnings=0
     types:
-      glob: "*.{js,ts, jsx, tsx}"
-      run: npx tsc
+      run: |
+        NODE_BIN="$(command -v node || echo /opt/homebrew/bin/node)" && \
+        "$NODE_BIN" ./node_modules/typescript/bin/tsc --pretty false --noEmit
 commit-msg:
   parallel: true
   commands:
     commitlint:
-      run: npx commitlint --edit
+      run: |
+        NODE_BIN="$(command -v node || echo /opt/homebrew/bin/node)" && \
+        "$NODE_BIN" node_modules/@commitlint/cli/cli.js --edit "$1"

@@ -1,15 +1,18 @@
 import { ValidationRule } from './Validator';
 
 /**
- * A validation rule that checks if the input string
- * has an exact specified length.
+ * LengthMatchRule
+ *
+ * Validates that input has exactly the specified length.
  */
 export class LengthMatchRule extends ValidationRule {
   private length: number;
 
   /**
-   * @param length - required exact length for validation
-   * @param errorMessage - string to display on validation failure.
+   * Creates an exact-length validator.
+   *
+   * @param length - Exact length required.
+   * @param errorMessage - Message returned when validation fails.
    */
   constructor(length: number, errorMessage: string) {
     super(errorMessage);
@@ -17,10 +20,10 @@ export class LengthMatchRule extends ValidationRule {
   }
 
   /**
-   * Validate that the input has exactly the specified length.
+   * Checks whether `input.length === length`.
    *
-   * @param input - The string to validate
-   * @returns true if valid, false otherwise
+   * @param input - String to validate.
+   * @returns `true` if valid, `false` otherwise.
    */
   validate(input: string): boolean {
     // Edge case: handle undefined or null as invalid

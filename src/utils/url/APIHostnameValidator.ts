@@ -5,6 +5,12 @@ import VGCollectLogger, {
   VGSLogSeverity,
 } from '../logger/VGSCollectLogger';
 
+/**
+ * APIHostnameValidator
+ *
+ * Validates custom CNAME hostnames for `VGSCollect` against a configuration endpoint.
+ * Ensures that submissions only proceed with verified hosts.
+ */
 class APIHostnameValidator {
   static readonly Constants = {
     validStatuses: [200, 300],
@@ -12,6 +18,14 @@ class APIHostnameValidator {
 
   static readonly hostValidatorBaseURL = 'https://js.verygoodvault.com';
 
+  /**
+   * Validates a custom hostname and returns `true` when resolvable.
+   * Logs errors via `VGSCollectLogger` when invalid.
+   *
+   * @param hostname - Candidate CNAME hostname provided by the integrator.
+   * @param tenantId - Vault tenant ID used to construct validation URL.
+   * @returns `true` if validation succeeds, `false` otherwise.
+   */
   static async validateCustomHostname(
     hostname: string,
     tenantId: string
@@ -66,6 +80,9 @@ class APIHostnameValidator {
     });
   }
 
+  /**
+   * Constructs the validation URL used to verify the hostname.
+   */
   private static async buildHostValidationURLstring(
     normalizedHostname: string,
     tenantId: string
@@ -75,6 +92,10 @@ class APIHostnameValidator {
     return url.toString();
   }
 
+  /**
+   * Normalizes input into a hostname string.
+   * Accepts raw hostnames and full URLs; returns `null` on parse failure.
+   */
   private static normalizeHostname(url: string): string | null {
     if (!/^https?:\/\//i.test(url)) {
       url = `https://${url}`;

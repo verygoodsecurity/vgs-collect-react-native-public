@@ -1,3 +1,7 @@
+/**
+ * Public SDK exports.
+ * Import from the package root to access documented API only.
+ */
 export { default as VGSCollect } from './collector/VGSCollect';
 export { default as VGSTextInput } from './components/VGSTextInput';
 export { default as VGSCardInput } from './components/VGSCardInput';

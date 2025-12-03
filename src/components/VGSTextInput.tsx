@@ -12,7 +12,10 @@ import ExpDateSeparateSerializer from '../utils/serializers/ExpDateSeparateSeria
 import type { TextInput } from 'react-native';
 
 type CardNumberInputProps = Omit<VGSCardInputProps, 'fieldName'> & { fieldName?: string }
-/** CardNumberInput wrapper */
+/**
+ * Card number input wrapper.
+ * Provides default `fieldName="pan"` and forwards focus/blur methods.
+ */
 const CardNumberInput =  forwardRef<VGSTextInputRef, CardNumberInputProps>(
   (props, ref) => {
     const { fieldName = 'pan', ...rest } = props;
@@ -25,7 +28,10 @@ const CardNumberInput =  forwardRef<VGSTextInputRef, CardNumberInputProps>(
   }
 );
 type CVCInputProps = Omit<VGSCVCInputProps, 'fieldName'> & { fieldName?: string };
-/** CVCInput wrapper */
+/**
+ * CVC input wrapper.
+ * Provides default `fieldName="cvc"` and forwards focus/blur methods.
+ */
 const CVCInput =  forwardRef<VGSTextInputRef, CVCInputProps>(
   (props, ref) => {
     const { fieldName = 'cvc', ...rest } = props;
@@ -38,7 +44,10 @@ const CVCInput =  forwardRef<VGSTextInputRef, CVCInputProps>(
   }
 );
 
-/** ExpDateInput wrapper */
+/**
+ * Expiration date input wrapper.
+ * Sets `type="expDate"` and applies `ExpDateSeparateSerializer` to split into `exp_month` and `exp_year`.
+ */
 const ExpDateInput = forwardRef<VGSTextInputRef, VGSPredefinedInputProps>(
   (props, ref) => {
     const {
@@ -61,7 +70,10 @@ const ExpDateInput = forwardRef<VGSTextInputRef, VGSPredefinedInputProps>(
   }
 );
 
-/** CardholderInput wrapper */
+/**
+ * Cardholder name input wrapper.
+ * Sets `type="cardHolderName"` and default `fieldName="cardholder"`.
+ */
 const CardholderInput =  forwardRef<VGSTextInputRef, VGSPredefinedInputProps>(
   (props, ref) => {
     const { fieldName = 'cardholder', type = 'cardHolderName', accessibilityLabel = 'Cardholder name', ...rest } = props;
@@ -88,7 +100,10 @@ export interface VGSTextInputComponent
   CardHolder: typeof CardholderInput;
 }
 
-/** Base input component for collecting sensitive data */
+/**
+ * Compound input component namespace.
+ * Exposes `VGSTextInputBase` with convenience wrappers: `CardNumber`, `CVC`, `ExpDate`, `CardHolder`.
+ */
 export const VGSTextInput = Object.assign(VGSTextInputBase, {
   CardNumber: CardNumberInput,
   CVC: CVCInput,

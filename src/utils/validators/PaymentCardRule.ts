@@ -3,19 +3,35 @@ import { LuhnCheckRule } from './LuhnCheckRule';
 import { PaymentCardBrandsManager } from '../paymentCards/PaymentCardBrandsManager';
 import { CheckSumAlgorithmType } from '../paymentCards/PaymentCardBrand';
 
-/** Class representing a payment card validation rule. */
+/**
+ * PaymentCardRule
+ *
+ * Validates payment card numbers using detected brand heuristics and checksum.
+ * Behavior:
+ * - Strips spaces/dashes, requires numeric input.
+ * - Detects brand, validates allowed lengths and checksum algorithm (e.g., Luhn).
+ * - Optional fallback validation when brand is unknown.
+ */
 export class PaymentCardRule extends ValidationRule {
   private validateUnknownCardBrand: boolean;
 
   /**
-   * @param errorMessage - string to display on validation failure.
-   * @param validateUnknownCardBrand - if true, attempts validation with the fallback brand.
+   * Creates a payment card validator.
+   *
+   * @param errorMessage - Message returned when validation fails.
+   * @param validateUnknownCardBrand - If `true`, applies fallback brand rules when detection fails.
    */
   constructor(errorMessage: string, validateUnknownCardBrand = false) {
     super(errorMessage);
     this.validateUnknownCardBrand = validateUnknownCardBrand;
   }
 
+  /**
+   * Checks whether `input` is a valid card number per brand rules.
+   *
+   * @param input - Card number string to validate.
+   * @returns `true` if valid, `false` otherwise.
+   */
   validate(input: string): boolean {
     // Remove spaces & dashes
     const cardNumber = input.replace(/\s+|-/g, '');

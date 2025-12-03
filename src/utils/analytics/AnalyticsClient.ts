@@ -17,6 +17,12 @@ export enum AnalyticEventStatus {
   Cancel = 'Cancel',
 }
 
+/**
+ * AnalyticsClient
+ *
+ * Internal client for fire-and-forget analytics events.
+ * Adds default headers to HTTP requests and encodes payloads as base64.
+ */
 class VGSAnalyticsClient {
   private static instance: VGSAnalyticsClient;
   public shouldCollectAnalytics: boolean = true;
@@ -35,6 +41,7 @@ class VGSAnalyticsClient {
     this.userAgentData = this.getUserAgentData();
   }
 
+  /** Returns the singleton analytics client. */
   public static getInstance(): VGSAnalyticsClient {
     if (!VGSAnalyticsClient.instance) {
       VGSAnalyticsClient.instance = new VGSAnalyticsClient();
@@ -42,7 +49,7 @@ class VGSAnalyticsClient {
     return VGSAnalyticsClient.instance;
   }
 
-  /// Default headers in VGSCollect http requests
+  // Default headers included in VGSCollect HTTP requests
   collectHTTPHeaders: Record<string, string> = (() => {
     const version = Platform.Version;
     const trStatus = this.shouldCollectAnalytics ? 'default' : 'none';
@@ -51,6 +58,7 @@ class VGSAnalyticsClient {
     };
   })();
 
+  /** Builds user agent metadata for analytics payloads. */
   private getUserAgentData(): { [key: string]: any } {
     const platform = Platform.OS;
     const version = Platform.Version; // React Native version
@@ -61,6 +69,14 @@ class VGSAnalyticsClient {
     };
   }
 
+  /**
+   * Tracks a form-scoped event by merging `FormAnalyticsDetails`.
+   *
+   * @param formDetails - Form-scoped context (id, tenant, environment).
+   * @param type - Event type.
+   * @param status - Event status (defaults to Success).
+   * @param extraData - Additional payload properties.
+   */
   trackFormEvent(
     formDetails: FormAnalyticsDetails,
     type: AnalyticsEventType,
@@ -71,6 +87,13 @@ class VGSAnalyticsClient {
     this.trackEvent(type, status, data);
   }
 
+  /**
+   * Tracks a generic analytics event.
+   *
+   * @param type - Event type.
+   * @param status - Event status.
+   * @param extraData - Additional payload properties.
+   */
   trackEvent(
     type: AnalyticsEventType,
     status: AnalyticEventStatus = AnalyticEventStatus.Success,
@@ -89,6 +112,7 @@ class VGSAnalyticsClient {
     this.sendAnalyticsRequest(data);
   }
 
+  /** Sends the analytics payload to the collector endpoint if enabled. */
   private async sendAnalyticsRequest(data: {
     [key: string]: any;
   }): Promise<void> {
@@ -112,6 +136,7 @@ class VGSAnalyticsClient {
     }
   }
 
+  /** Base64 encodes the JSON payload for transport. */
   private encodeData(data: { [key: string]: any }): string {
     const jsonData = JSON.stringify(data);
     return btoa(jsonData); // Base64 encoding

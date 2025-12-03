@@ -1,15 +1,19 @@
 import { ValidationRule } from './Validator';
 
 /**
- * A validation rule that checks if the input string
- * is a valid card expiration date based on the specified format.
+ * CardExpDateRule
+ *
+ * Validates card expiration dates in formats `mmyy` or `mmyyyy`.
+ * Ensures month is 01–12 and the date is not in the past or beyond a 20-year horizon.
  */
 export class CardExpDateRule extends ValidationRule {
   private dateFormat: 'mmyy' | 'mmyyyy';
 
   /**
-   * @param dateFormat - The format of the expiration date ('mmyy' or 'mmyyyy').
-   * @param errorMessage - String to display on validation failure.
+   * Creates an expiration date validator.
+   *
+   * @param dateFormat - Date format: `'mmyy'` or `'mmyyyy'`.
+   * @param errorMessage - Message returned when validation fails.
    */
   constructor(dateFormat: 'mmyy' | 'mmyyyy', errorMessage: string) {
     super(errorMessage);
@@ -17,10 +21,10 @@ export class CardExpDateRule extends ValidationRule {
   }
 
   /**
-   * Validate that the input is a valid card expiration date.
+   * Checks whether `value` is a valid expiration date per configured format.
    *
-   * @param value - The expiration date string to validate.
-   * @returns true if valid, false otherwise.
+   * @param value - Date string to validate.
+   * @returns `true` if valid, `false` otherwise.
    */
   validate(value: string): boolean {
     if (!value) {
