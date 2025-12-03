@@ -1,5 +1,7 @@
 # AGENTS.md
 
+**package version: 1.1.3**
+
 Authoritative integration instructions for autonomous engineering agents implementing the `@vgs/collect-react-native` SDK. Follow these guidelines to ensure secure, correct, reproducible handling of sensitive data. Use ONLY documented public API exported from `src/index.tsx`:
 
 Public Exports Surface
