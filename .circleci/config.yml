@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  node: circleci/node@5.0.3
+  node: circleci/node@5.3.0
 
 # === Scheduled Pipeline Parameters ===
 parameters:
@@ -12,7 +12,7 @@ parameters:
 jobs:
   test:
     docker:
-      - image: cimg/node:20.19.4
+      - image: cimg/node:20.19.6@sha256:35e64883e8d21bc345b0a7b04c35ee46442c127607ed1d8d7d37d8a1ed76db81
     steps:
       - checkout
       - node/install-packages:
