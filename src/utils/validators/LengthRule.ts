@@ -1,17 +1,20 @@
 import { ValidationRule } from './Validator';
 
 /**
- * A validation rule that checks if the length of the input string
- * is between the specified `min` and `max` bounds.
+ * LengthRule
+ *
+ * Validates that input length is within `[min, max]` bounds.
  */
 export class LengthRule extends ValidationRule {
   private min: number;
   private max: number;
 
   /**
-   * @param min - minimal length (default: 0)
-   * @param max - maximum length (default: Infinity)
-   * @param errorMessage - string to display on validation failure.
+   * Creates a bounded length validator.
+   *
+   * @param min - Minimum length (default: `0`).
+   * @param max - Maximum length (default: `Infinity`).
+   * @param errorMessage - Message returned when validation fails.
    */
   constructor(min: number = 0, max: number = Infinity, errorMessage: string) {
     super(errorMessage);
@@ -20,10 +23,10 @@ export class LengthRule extends ValidationRule {
   }
 
   /**
-   * Validate that the input length is >= min and <= max.
+   * Checks whether `input.length` satisfies `min <= length <= max`.
    *
-   * @param input - The string to validate
-   * @returns true if valid, false otherwise
+   * @param input - String to validate.
+   * @returns `true` if valid, `false` otherwise.
    */
   validate(input: string): boolean {
     // Edge case: handle undefined or null as invalid

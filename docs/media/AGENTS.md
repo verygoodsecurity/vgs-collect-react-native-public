@@ -1,5 +1,7 @@
 # AGENTS.md
 
+**package version: 1.1.3**
+
 Authoritative integration instructions for autonomous engineering agents implementing the `@vgs/collect-react-native` SDK. Follow these guidelines to ensure secure, correct, reproducible handling of sensitive data. Use ONLY documented public API exported from `src/index.tsx`:
 
 Public Exports Surface
@@ -69,7 +71,7 @@ Mask placeholders:
 
 ---
 ## 4. Validation Rules (Public Surface)
-Available (import from validators export): `NotEmptyRule`, `LengthRule`, `LengthMatchRule`, `PatternRule`, `CardExpDateRule`, `PaymentCardRule`, `LuhnCheckRule`, `MatchFieldRule`.
+Available (import from validators export): `NotEmptyRule`, `LengthRule`, `LengthMatchRule`, `PatternRule`, `CardExpDateRule`, `PaymentCardRule`, `LuhnCheckRule`, `MatchFieldRule`, `ABARoutingNumberRule`.
 
 Usage Example (custom name field rule set):
 ```tsx

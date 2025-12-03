@@ -8,6 +8,9 @@ import {
 import { CardExpDateRule } from '../utils/validators/CardExpDateRule';
 import { ValidationRule } from '../utils/validators/Validator';
 
+/**
+ * Supported input types for `VGSTextInput` components.
+ */
 export type VGSInputType =
   | 'text'
   | 'card'
@@ -18,8 +21,9 @@ export type VGSInputType =
   | 'ssn';
 
 /**
- * Predefined default config for each field type.
- * Developers can override these defaults via VGSTextInput props.
+ * Predefined defaults per input `type`.
+ * Includes mask, keyboard type, and validation rules.
+ * Consumers can override via `VGSTextInput` props.
  */
 export const inputTypeDefaults: Record<
   VGSInputType,
@@ -86,7 +90,7 @@ export const inputTypeDefaults: Record<
   },
 };
 
-// Define default TokenizationConfig for each field type
+// Default TokenizationConfig for each field type
 export const VGSTokenizationConfigurationType: Record<
   VGSInputType,
   VGSTokenizationConfiguration
@@ -121,7 +125,7 @@ export const VGSTokenizationConfigurationType: Record<
   },
 };
 
-/// String for analytics events
+// String mapping used for analytics events
 export function getTypeAnalyticsString(inputType: VGSInputType): string {
   switch (inputType) {
     case 'card':

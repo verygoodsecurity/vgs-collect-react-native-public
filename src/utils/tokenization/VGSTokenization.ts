@@ -5,23 +5,26 @@ import {
 } from './TokenizationConfiguration';
 
 /**
- * Tokenization configuration for a fields.
+ * VGSTokenizationConfiguration
+ *
+ * Public namespace exposing tokenization presets and enums.
+ * Use `presets` for per-type defaults, `storage` and `aliasFormat` for policies.
  */
 export default class VGSTokenizationConfiguration {
   /**
-   * Default Tokenization configuration for field types.
+   * Default tokenization configuration per field type.
    */
   static presets: typeof VGSTokenizationConfigurationType =
     VGSTokenizationConfigurationType;
 
   /**
-   * Enum for VGSVaultStorageType.
+   * Enum for storage policies.
    * https://www.verygoodsecurity.com/docs/vault/concepts/tokens#retention-policies
    */
   static storage: typeof VGSVaultStorageType = VGSVaultStorageType;
 
   /**
-   * Enum for VGSVaultAliasFormat.
+   * Enum for alias formats.
    * https://www.verygoodsecurity.com/docs/vault/concepts/tokens#alias-formats
    */
   static aliasFormat: typeof VGSVaultAliasFormat = VGSVaultAliasFormat;

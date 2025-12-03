@@ -7,20 +7,33 @@ import VGSCollectLogger, {
 export interface VGSSerializer {
   serialize(value: string): string | Record<string, string>;
 }
-/** Serializer that splits an expiration date into separate month and year fields. */
+/**
+ * ExpDateSeparateSerializer
+ *
+ * Splits card expiration date strings into separate month and year fields.
+ * Supports `mmyy` and `mmyyyy` formats.
+ */
 class ExpDateSeparateSerializer implements VGSSerializer {
   private monthFieldName: string;
   private yearFieldName: string;
   /**
-   * Create an ExpDateSeparateSerializer.
-   * @param monthFieldName - The field name for the month part.
-   * @param yearFieldName - The field name for the year part.
+   * Creates a serializer that outputs `{ [monthFieldName]: MM, [yearFieldName]: YY|YYYY }`.
+   *
+   * @param monthFieldName - Output key for month.
+   * @param yearFieldName - Output key for year.
    */
   public constructor(monthFieldName: string, yearFieldName: string) {
     this.monthFieldName = monthFieldName;
     this.yearFieldName = yearFieldName;
   }
 
+  /**
+   * Serializes `value` into `{ monthFieldName: MM, yearFieldName: YY|YYYY }`.
+   * Returns empty strings for invalid formats.
+   *
+   * @param value - Expiration string in `mmyy` or `mmyyyy`.
+   * @returns Record with month/year fields or empty values on error.
+   */
   serialize(value: string): string | Record<string, string> {
     let month: string, year: string;
     // Use the same logic as in CardExpDateRule to extract month and year

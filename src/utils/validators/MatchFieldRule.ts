@@ -4,16 +4,18 @@ import type VGSCollect from '../../collector/VGSCollect';
 /**
  * MatchFieldRule
  *
- * Secure cross-field equality validator. Compares current input against
- * another field's value.
+ * Secure cross-field equality validator.
+ * Compares current input against another field's value via a comparator without exposing raw data.
  */
 export class MatchFieldRule extends ValidationRule {
   private readonly collector: VGSCollect;
   private readonly targetFieldName: string;
 
   /**
-   * @param collector - VGSCollect instance managing fields.
-   * @param targetFieldName - Name of the field to compare against.
+   * Creates a cross-field match validator.
+   *
+   * @param collector - `VGSCollect` instance managing fields.
+   * @param targetFieldName - Field name to compare against.
    * @param errorMessage - Message when values do not match.
    */
   constructor(
@@ -26,6 +28,12 @@ export class MatchFieldRule extends ValidationRule {
     this.targetFieldName = targetFieldName;
   }
 
+  /**
+   * Checks whether `input` equals the target field value.
+   *
+   * @param input - String to compare.
+   * @returns `true` if equal, `false` otherwise.
+   */
   validate(input: string): boolean {
     if (!input) return false;
     // Get a comparator function that doesn't expose the raw value

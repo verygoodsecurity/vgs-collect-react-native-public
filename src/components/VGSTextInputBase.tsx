@@ -31,6 +31,10 @@ import { type AutoCompleteType } from './types/AutoCompleteType';
 // stale one. This approximates the platform default neutral gray.
 const DEFAULT_PLACEHOLDER_COLOR = '#9CA3AF';
 
+/**
+ * Props for predefined input wrappers.
+ * Allow overriding `fieldName` and `type` while inheriting base props.
+ */
 export interface VGSPredefinedInputProps
   extends Omit<VGSTextInputProps, 'fieldName' | 'type'> {
   fieldName?: string;
@@ -39,7 +43,8 @@ export interface VGSPredefinedInputProps
 
 
 /**
- * Props for the VGSTextInput component.
+ * Props for the `VGSTextInputBase` component.
+ * Public surface used by wrappers and direct usage.
  */
 export interface VGSTextInputProps {
   /**
@@ -139,14 +144,20 @@ export interface VGSTextInputProps {
   accessibilityRole?: AccessibilityRole;
 }
 
-/** Ref methods for VGSTextInput component */
+/** Ref methods for `VGSTextInputBase` component. */
 export interface VGSTextInputRef {
   focus(): void;
   blur(): void;
 }
 
 /**
- * A Securee text input component for collecting sensitive data with VGS.
+ * Secure text input for collecting sensitive data with VGS.
+ *
+ * Behavior:
+ * - Registers/unregisters field with `VGSCollect` and keeps state synced.
+ * - Applies mask and validation rules based on `type` defaults and overrides.
+ * - Supports tokenization via `tokenization` config.
+ * - Emits `onStateChange` with validity and metadata for UI.
  */
 export const VGSTextInputBase = forwardRef<VGSTextInputRef, VGSTextInputProps>((props, ref) => {
   const {
@@ -272,7 +283,6 @@ export const VGSTextInputBase = forwardRef<VGSTextInputRef, VGSTextInputProps>((
     return () => {
       collector.unregisterField(fieldName);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [collector, fieldName, currentMask, divider, type, validationRules]);
 
   const handleFocus = () => {

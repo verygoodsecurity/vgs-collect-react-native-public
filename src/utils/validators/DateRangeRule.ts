@@ -26,11 +26,13 @@ export class VGSDate implements VGSDateInterface {
     this.year = year;
   }
 
-  /**  Create VGSDate from string with given format 
-   * @param dateString - The date string to parse.
-   * @param format - The format of the date string ('ddmmyyyy', 'mmddyyyy', 'yyyymmdd').
-   * @returns A VGSDate instance or null if parsing fails.
-  */
+  /**
+   * Create `VGSDate` from a string with a given format.
+   *
+   * @param dateString - Date string to parse.
+   * @param format - One of `'ddmmyyyy'`, `'mmddyyyy'`, `'yyyymmdd'`.
+   * @returns Parsed `VGSDate` or `null` if parsing fails.
+   */
   public static dateFromString(dateString: string, format: VGSDateFormatType): VGSDate | null {
     if (dateString.length === 8) {
       var day = NaN
@@ -69,7 +71,7 @@ export class VGSDate implements VGSDateInterface {
     }
   }
 
-  /** Compare if this date is less than or equal to another VGSDate */
+  /** Compare if this date is less than or equal to another `VGSDate`. */
   public lte(other: VGSDate): boolean {
     if (this.year !== other.year) {
       return this.year < other.year;
@@ -80,7 +82,7 @@ export class VGSDate implements VGSDateInterface {
     return this.day <= other.day;
   }
 
-  /** Compare if this date is greater than or equal to another VGSDate */
+  /** Compare if this date is greater than or equal to another `VGSDate`. */
   public gte(other: VGSDate): boolean {
     if (this.year !== other.year) {
       return this.year > other.year;
@@ -91,29 +93,37 @@ export class VGSDate implements VGSDateInterface {
     return this.day >= other.day;
   }
 
-  /** Check if this date is between two other dates (inclusive) */
+  /** Check if this date is between two other dates (inclusive). */
   public isBetween(start: VGSDate, end: VGSDate): boolean {
     return this.gte(start) && this.lte(end);
   }
 }
-/** Type representing supported date formats
- * 'ddmmyyyy' - day, month, year
- * 'mmddyyyy' - month, day, year
- * 'yyyymmdd' - year, month, day
+/**
+ * Supported date formats:
+ * - `ddmmyyyy`: day, month, year
+ * - `mmddyyyy`: month, day, year
+ * - `yyyymmdd`: year, month, day
  */
 export type VGSDateFormatType = 'ddmmyyyy' | 'mmddyyyy' | 'yyyymmdd';
 
-/** Class representing a date range validation rule. */
+/**
+ * DateRangeRule
+ *
+ * Validates that a date string falls within specified bounds.
+ * Accepts optional start/end constraints and a required format.
+ */
 export class DateRangeRule extends ValidationRule {
   private dateFormat: VGSDateFormatType;
   private startDate: VGSDate | null = null;
   private endDate: VGSDate | null = null;
 
   /**
-   * @param dateFormat - The format of the expiration date ('mmyy' or 'mmyyyy').
-   * @param errorMessage - String to display on validation failure.
-   * @param start - Optional start date for the valid range.
-   * @param end - Optional end date for the valid range.
+   * Creates a date range validator.
+   *
+   * @param dateFormat - Format of input date string.
+   * @param errorMessage - Message returned when validation fails.
+   * @param start - Optional inclusive start bound.
+   * @param end - Optional inclusive end bound.
    */
   public constructor(dateFormat: VGSDateFormatType,
                    errorMessage: string,
@@ -126,10 +136,10 @@ export class DateRangeRule extends ValidationRule {
   }
 
   /**
-   * Validate that the input in a date range.
+   * Checks whether `value` parses and satisfies the configured range.
    *
-   * @param value - The expiration date string to validate.
-   * @returns true if valid, false otherwise.
+   * @param value - Date string to validate.
+   * @returns `true` if valid, `false` otherwise.
    */
   validate(value: string): boolean {
     if (!value) {

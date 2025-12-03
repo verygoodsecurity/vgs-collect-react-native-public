@@ -7,7 +7,8 @@ import type { VGSTextInputState } from './VGSTextInputState';
 import { PaymentCardBrandsManager } from '../utils/paymentCards/PaymentCardBrandsManager';
 
 /**
- * Specific Props for the VGSCardInput component.
+ * Props for the `VGSCardInput` component.
+ * Extends `VGSTextInputProps` but fixes `type` to `card`.
  */
 export interface VGSCardInputProps extends Omit<VGSTextInputProps, 'type'> {
   /**
@@ -50,8 +51,12 @@ export interface VGSCardInputProps extends Omit<VGSTextInputProps, 'type'> {
 }
 
 /**
- * A Secure component for inputting payment card details with a pre-defefined config such as type, validation rules, masks.
- * It automatically detects the card brand and displays the corresponding icon.
+ * Secure input for payment card numbers.
+ *
+ * Behavior:
+ * - Sets `type="card"` with default card mask and validators.
+ * - Detects card brand dynamically and updates brand icon.
+ * - Pads input to avoid icon overlap based on `iconPosition`.
  */
 const VGSCardInput = forwardRef<VGSTextInputRef, VGSCardInputProps>(({
   iconPosition = 'right',
@@ -90,7 +95,6 @@ const VGSCardInput = forwardRef<VGSTextInputRef, VGSCardInputProps>(({
         onStateChange={handleStateChange}
         accessibilityLabel={accessibilityLabel}
         textStyle={[
-          // eslint-disable-next-line react-native/no-inline-styles
           {
             paddingLeft: iconPosition === 'left' ? iconWidth + iconPadding : 0,
             paddingRight:
@@ -105,7 +109,6 @@ const VGSCardInput = forwardRef<VGSTextInputRef, VGSCardInputProps>(({
           source={brandIcon}
           style={[
             styles.icon,
-            // eslint-disable-next-line react-native/no-inline-styles
             {
               width: iconWidth,
               height: iconHeight,
@@ -124,7 +127,6 @@ const VGSCardInput = forwardRef<VGSTextInputRef, VGSCardInputProps>(({
           source={brandIcon}
           style={[
             styles.icon,
-            // eslint-disable-next-line react-native/no-inline-styles
             {
               width: iconWidth,
               height: iconHeight,
