@@ -12,7 +12,7 @@ parameters:
 jobs:
   test:
     docker:
-      - image: cimg/node:20.19.6@sha256:35e64883e8d21bc345b0a7b04c35ee46442c127607ed1d8d7d37d8a1ed76db81
+      - image: cimg/node:24.12.0@sha256:31d520e1abfc4e38d1508ab1199dc3e145b6a650fee6084310ae4a3f2a3007dd
     steps:
       - checkout
       - node/install-packages:
